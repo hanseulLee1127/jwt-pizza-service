@@ -1,5 +1,5 @@
-const mysql = require('mysql2/promise');
-const config = require('../config.json').db;
+import mysql from 'mysql2/promise';
+import config from '../config.js';
 
 class DB {
   constructor() {
@@ -7,10 +7,10 @@ class DB {
   }
 
   async getOrders(page = 1) {
-    const offset = this.getOffset(page, config.listPerPage);
+    const offset = this.getOffset(page, config.db.listPerPage);
     const rows = await this.query(
       `SELECT id, franchise, store, data 
-      FROM orders LIMIT ${offset},${config.listPerPage}`
+      FROM orders LIMIT ${offset},${config.db.listPerPage}`
     );
     const data = this.emptyOrRows(rows);
     const meta = { page };
@@ -40,7 +40,7 @@ class DB {
   }
 
   async query(sql, params) {
-    const connection = await mysql.createConnection(config.connection);
+    const connection = await mysql.createConnection(config.db.connection);
     const [results] = await connection.execute(sql, params);
 
     return results;
@@ -49,15 +49,15 @@ class DB {
   async initializeDatabase() {
     try {
       const connection = await mysql.createConnection({
-        host: config.connection.host,
-        user: config.connection.user,
-        password: config.connection.password,
-        connectTimeout: config.connection.connectTimeout,
+        host: config.db.connection.host,
+        user: config.db.connection.user,
+        password: config.db.connection.password,
+        connectTimeout: config.db.connection.connectTimeout,
       });
 
-      await connection.query(`CREATE DATABASE IF NOT EXISTS ${config.connection.database}`);
+      await connection.query(`CREATE DATABASE IF NOT EXISTS ${config.db.connection.database}`);
 
-      await connection.query(`USE ${config.connection.database}`);
+      await connection.query(`USE ${config.db.connection.database}`);
 
       await connection.query(`
             CREATE TABLE IF NOT EXISTS orders (
@@ -75,4 +75,4 @@ class DB {
   }
 }
 
-module.exports = new DB();
+export default new DB();

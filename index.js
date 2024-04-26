@@ -1,8 +1,8 @@
-const express = require('express');
-const cookieParser = require('cookie-parser');
-const jwt = require('jsonwebtoken');
-const config = require('./config.json');
-const pizzaRouter = require('./routes/pizza');
+import express from 'express';
+import cookieParser from 'cookie-parser';
+import jwt from 'jsonwebtoken';
+import config from './config.js';
+import pizzaRouter from './routes/pizza.js';
 
 const app = express();
 app.use(express.json());

@@ -1,8 +1,9 @@
-const express = require('express');
-const router = express.Router();
-const db = require('../database/database');
+import express from 'express';
+import db from '../database/database.js';
 
-router.get('/', async function (req, res, next) {
+const pizzaRouter = express.Router();
+
+pizzaRouter.get('/', async function (req, res, next) {
   try {
     res.json(await db.getOrders(req.query.page));
   } catch (err) {
@@ -11,7 +12,7 @@ router.get('/', async function (req, res, next) {
   }
 });
 
-router.post('/order', async function (req, res, next) {
+pizzaRouter.post('/order', async function (req, res, next) {
   try {
     const order = req.body;
     res.send(await db.addOrder(order));
@@ -21,4 +22,4 @@ router.post('/order', async function (req, res, next) {
   }
 });
 
-module.exports = router;
+export default pizzaRouter;
