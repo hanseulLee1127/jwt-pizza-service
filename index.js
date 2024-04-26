@@ -2,7 +2,7 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 const config = require('./config.json');
-const pizzaRouter = require('./database');
+const pizzaRouter = require('./routes/pizza');
 
 const app = express();
 app.use(express.json());
