@@ -10,6 +10,19 @@ app.use(cookieParser());
 app.use('/pizza', pizzaRouter);
 app.use('/auth', authRouter);
 
+app.use('/', (req, res) =>
+  res.send({
+    message: 'welcome to the JWT Pizza',
+    endpoints: [
+      { method: 'POST', path: '/auth', description: 'Create a new user' },
+      { method: 'PUT', path: '/auth', description: 'Login' },
+      { method: 'GET', path: '/pizza/menu', description: 'Get the pizza menu' },
+      { method: 'GET', path: '/pizza', description: 'Get the orders' },
+      { method: 'POST', path: '/pizza/order', description: 'Add a new order' },
+    ],
+  })
+);
+
 app.use('*', (req, res) => res.status(404).json({ message: 'not found' }));
 
 app.use((err, req, res, next) => {
