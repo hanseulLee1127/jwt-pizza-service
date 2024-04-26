@@ -27,7 +27,9 @@ curl localhost:3000/menu
 ### Order
 
 ```sh
-curl -b cookies.txt -X POST localhost:3000/order -d '{"order":["pep", "cheese"]}' -H 'Content-Type: application/json'
+curl -b cookies.txt -X GET localhost:3000/pizza
+
+curl -b cookies.txt -X POST localhost:3000/pizza/order -d '{"franchise":"pieshop", "store":"store3", "data":["pep", "cheese"]}' -H 'Content-Type: application/json'
 ```
 
 ## Development notes

@@ -9,6 +9,7 @@
       "request": "launch",
       "restart": true,
       "runtimeExecutable": "nodemon",
+      "args": ["3000"],
       "skipFiles": ["<node_internals>/**"],
       "type": "node"
     }
