@@ -7,25 +7,26 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 
-app.use('/pizza', pizzaRouter);
-app.use('/auth', authRouter);
+const apiRouter = express.Router();
 
-app.use('/', (req, res) =>
+app.use('/api', apiRouter);
+apiRouter.use('/pizza', pizzaRouter);
+apiRouter.use('/auth', authRouter);
+
+app.use('*', (_, res) => {
   res.send({
     message: 'welcome to the JWT Pizza',
     endpoints: [
-      { method: 'POST', path: '/auth', description: 'Create a new user' },
-      { method: 'PUT', path: '/auth', description: 'Login' },
-      { method: 'GET', path: '/pizza/menu', description: 'Get the pizza menu' },
-      { method: 'GET', path: '/pizza', description: 'Get the orders' },
-      { method: 'POST', path: '/pizza/order', description: 'Add a new order' },
+      { method: 'POST', path: '/api/auth', description: 'Create a new user' },
+      { method: 'PUT', path: '/api/auth', description: 'Login existing user' },
+      { method: 'GET', path: '/api/pizza/menu', description: 'Get the pizza menu' },
+      { method: 'GET', path: '/api/pizza', description: 'Get the orders' },
+      { method: 'POST', path: '/api/pizza/order', description: 'Add a new order' },
     ],
-  })
-);
+  });
+});
 
-app.use('*', (req, res) => res.status(404).json({ message: 'not found' }));
-
-app.use((err, req, res, next) => {
+app.use((err, _, res) => {
   console.error(err.stack);
   res.status(500).json({ message: err.message });
 });
