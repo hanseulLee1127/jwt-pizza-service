@@ -2,6 +2,7 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const jwt = require('jsonwebtoken');
 const config = require('./config.json');
+const pizzaRouter = require('./database');
 
 const app = express();
 app.use(express.json());
@@ -50,6 +51,8 @@ app.get('/menu', (req, res) => {
     ],
   });
 });
+
+app.use('/pizza', pizzaRouter);
 
 function authenticateToken(req, res, next) {
   const token = req.cookies.token;

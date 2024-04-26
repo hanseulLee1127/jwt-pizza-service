@@ -35,7 +35,7 @@ curl -b cookies.txt -X POST localhost:3000/order -d '{"order":["pep", "cheese"]}
 Install the required packages.
 
 ```sh
-npm install express cookie-parser jsonwebtoken
+npm install express cookie-parser jsonwebtoken mysql2
 ```
 
 Nodemon is assumed to be installed globally so that you can have hot reloading when debugging.
