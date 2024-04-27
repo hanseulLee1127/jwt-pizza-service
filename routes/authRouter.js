@@ -4,6 +4,8 @@ import config from '../config.js';
 
 const authRouter = express.Router();
 
+let _nextId = 0;
+const nextId = () => _nextId++;
 const users = new Map();
 
 function setAuth(user, res) {
@@ -34,18 +36,21 @@ authRouter.put('/', (req, res) => {
     return res.status(401).json({ message: 'incorrect password' });
   }
   setAuth(user, res);
-  res.json({ email: user.email });
+  res.json({ ...user, password: undefined });
 });
 
 authRouter.post('/', (req, res) => {
-  const { email, password } = req.body;
+  const { name, email, password } = req.body;
+  if (!name || !email || !password) {
+    return res.status(400).json({ message: 'name, email, and password are required' });
+  }
   if (users.has(email)) {
     return res.status(400).json({ message: 'user already exists' });
   }
-  const user = { email, password };
+  const user = { id: nextId(), name, email, password, roles: ['diner'] };
   users.set(email, user);
   setAuth(user, res);
-  res.json({ email: user.email });
+  res.json({ ...user, password: undefined });
 });
 
 export default authRouter;
