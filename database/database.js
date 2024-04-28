@@ -1,6 +1,12 @@
 import mysql from 'mysql2/promise';
 import config from '../config.js';
 
+const Role = {
+  Diner: 'diner',
+  Franchisee: 'franchisee',
+  Admin: 'admin',
+};
+
 class DB {
   constructor() {
     this.initializeDatabase();
@@ -52,20 +58,127 @@ class DB {
   }
 
   async addDefaultMenu(connection) {
-    const defaultMenu = [
-      { title: 'Veggie', description: 'A garden of delight', image: 'pizza1.png', price: 0.0038 },
-      { title: 'Pepperoni', description: 'Spicy treat', image: 'pizza2.png', price: 0.0042 },
-      { title: 'Margarita', description: 'Essential classic', image: 'pizza3.png', price: 0.0014 },
-      { title: 'Crusty', description: 'A dry mouthed favorite', image: 'pizza4.png', price: 0.0024 },
-      { title: 'Flat', description: 'Something special', image: 'pizza5.png', price: 0.0028 },
-      { title: 'Chared Leopard', description: 'For those with a darker side', image: 'pizza6.png', price: 0.0099 },
-    ];
-
     const [rows] = await connection.execute(`SELECT COUNT(*) as count FROM menu`);
     const rowCount = rows[0].count;
     if (rowCount === 0) {
+      const defaultMenu = [
+        { title: 'Veggie', description: 'A garden of delight', image: 'pizza1.png', price: 0.0038 },
+        { title: 'Pepperoni', description: 'Spicy treat', image: 'pizza2.png', price: 0.0042 },
+        { title: 'Margarita', description: 'Essential classic', image: 'pizza3.png', price: 0.0014 },
+        { title: 'Crusty', description: 'A dry mouthed favorite', image: 'pizza4.png', price: 0.0024 },
+        { title: 'Flat', description: 'Something special', image: 'pizza5.png', price: 0.0028 },
+        { title: 'Chared Leopard', description: 'For those with a darker side', image: 'pizza6.png', price: 0.0099 },
+      ];
+
       for (const menuItem of defaultMenu) {
         await connection.execute(`INSERT INTO menu (title, description, price, image) VALUES (?, ?, ?, ?)`, [menuItem.title, menuItem.description, menuItem.price, menuItem.image]);
+      }
+    }
+  }
+
+  async addDefaultUsers(connection) {
+    const [rows] = await connection.execute(`SELECT COUNT(*) as count FROM user`);
+    const rowCount = rows[0].count;
+    if (rowCount === 0) {
+      const defaultUsers = [
+        { name: 'Rajah Singh', email: 'f@jwt.com', password: 'a', roles: [Role.Franchisee] },
+        { name: 'Zara Ahmed', email: 'a@jwt.com', password: 'a', roles: [Role.Admin] },
+        { name: 'Kai Chen', email: 'd@jwt.com', password: 'a', roles: [Role.Diner] },
+        { name: 'Lila Patel', email: 'lila@jwt.com', password: 'a', roles: [Role.Diner] },
+        { name: 'Aiden Kim', email: 'aiden@jwt.com', password: 'a', roles: [Role.Diner] },
+        { name: 'Sofia Nguyen', email: 'sofia@jwt.com', password: 'a', roles: [Role.Diner] },
+        { name: 'Emilio Costa', email: 'emilio@jwt.com', password: 'a', roles: [Role.Diner] },
+        { name: 'Amara Ali', email: 'amara@jwt.com', password: 'a', roles: [Role.Diner] },
+        { name: 'Nikolai Petrov', email: 'nikolai@jwt.com', password: 'a', roles: [Role.Franchisee] },
+        { name: 'Luna Santos', email: 'luna@jwt.com', password: 'a', roles: [Role.Franchisee] },
+      ];
+
+      for (const user of defaultUsers) {
+        await connection.execute(`INSERT INTO user (name, email, password) VALUES (?, ?, ?)`, [user.name, user.email, user.password]);
+      }
+
+      // We need to enhance the role information and add it to the database here.
+      // for (const adminId of admins) {
+      //   await connection.execute(`INSERT INTO userRole (userId, role, objectId) VALUES (?, ?, ?)`, [adminId, Role.Admin, franchiseId]);
+      // }
+    }
+  }
+
+  purchaseHistory = [
+    {
+      id: 'ph1',
+      diner: '87654321-4321-4def-9abc-987654321def',
+      orders: [
+        {
+          id: 'e7b6a8f2-4e1d-4d2d-9e8a-3e9c1a2b6d5f',
+          franchiseId: 'e7b6a8f2-4e1d-4d2d-9e8a-3e9c1a2b6d5f',
+          storeId: '12345678-1234-4abc-9def-123456789abc',
+          date: '2024-03-10T00:00:00Z',
+          items: [
+            { id: 'a11111111-1111-1111-1111-111111111111', description: 'Veggie', price: 0.05 },
+            { id: 'a21111111-1111-1111-1111-111111111111', description: 'Margarita', price: 0.00345 },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'ph2',
+      diner: 'abcdef12-34ab-4def-9abc-abcdef123456',
+      orders: [
+        {
+          id: 'e7b3423f2-4e1d-4d2d-9e8a-3e9c1a2b6d5f',
+          franchiseId: 'e7b6a8f2-4e1d-4d2d-9e8a-3e9c1a2b6d5f',
+          storeId: '12345678-1234-4abc-9def-123456789abc',
+          date: '2023-03-10T00:00:00Z',
+          items: [
+            { id: 'a4111111-1111-1111-1111-111111111111', description: 'Pepperoni', price: 0.005 },
+            { id: 'a3111111-1111-1111-1111-111111111111', description: 'Crusty', price: 0.0045 },
+          ],
+        },
+      ],
+    },
+  ];
+
+  async addDefaultFranchises(connection) {
+    const [rows] = await connection.execute(`SELECT COUNT(*) as count FROM franchise`);
+    const rowCount = rows[0].count;
+    if (rowCount === 0) {
+      const franchises = [
+        {
+          name: 'SuperPie',
+          admins: ['12345678-1234-4abc-9def-123456789abc'],
+          id: 'e7b6a8f2-4e1d-4d2d-9e8a-3e9c1a2b6d5f',
+          stores: [
+            { id: '12345678-1234-4abc-9def-123456789abc', name: 'Orem', totalRevenue: 3.0 },
+            { id: '87654321-4321-4def-9abc-987654321def', name: 'Provo', totalRevenue: 5.3 },
+            { id: 'abcdef12-34ab-4def-9abc-abcdef123456', name: 'Payson', totalRevenue: 23.2 },
+          ],
+        },
+        {
+          name: 'LotaPizza',
+          admins: ['01234567-8901-4f4f-9f9f-9876543210ab', '65432109-8765-4e4e-9e9e-0123456789ab'],
+          id: 'abb3423f2-4e1d-4d2d-9e8a-3e9c1a2b6d77',
+          stores: [
+            { id: 'aabbccdd-eeff-4a4a-9a9a-bbccddeeff00', name: 'Lehi', totalRevenue: 0.25 },
+            { id: '11223344-5566-4b4b-9b9b-ccddeeff0011', name: 'Springville', totalRevenue: 1.9 },
+            { id: '99887766-5544-4c4c-9c9c-bbaa99887766', name: 'American Fork', totalRevenue: 4.802 },
+          ],
+        },
+        {
+          name: 'PizzaCorp',
+          admins: ['65432109-8765-4e4e-9e9e-0123456789ab'],
+          id: '978b3423f2-4e1d-4d2d-9e8a-3e9c1a2b6d78',
+          stores: [{ id: '44556677-3322-4d4d-9d9d-ccbbaa445566', name: 'Spanish Fork', totalRevenue: 3000000 }],
+        },
+      ];
+
+      for (const franchise of franchises) {
+        const { name, admins, stores } = franchise;
+        const [franchiseResult] = await connection.execute(`INSERT INTO franchise (name) VALUES (?)`, [name]);
+        const franchiseId = franchiseResult.insertId;
+        for (const store of stores) {
+          await connection.execute(`INSERT INTO store (franchiseId, name) VALUES (?, ?)`, [franchiseId, store.name]);
+        }
       }
     }
   }
@@ -84,25 +197,79 @@ class DB {
       await connection.query(`USE ${config.db.connection.database}`);
 
       await connection.query(`
-            CREATE TABLE IF NOT EXISTS dinnerOrder (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                franchise VARCHAR(255) NOT NULL,
-                store VARCHAR(255) NOT NULL,
-                data TEXT NOT NULL
-            )
+        CREATE TABLE IF NOT EXISTS user (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          email VARCHAR(255) NOT NULL,
+          password VARCHAR(255) NOT NULL
+        )
       `);
 
       await connection.query(`
-            CREATE TABLE IF NOT EXISTS menu (
-              id INT AUTO_INCREMENT PRIMARY KEY,
-              title VARCHAR(255) NOT NULL,
-              image VARCHAR(1024) NOT NULL,
-              price DECIMAL(10, 2) NOT NULL,
-              description TEXT NOT NULL
-            )
+        CREATE TABLE IF NOT EXISTS menu (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          title VARCHAR(255) NOT NULL,
+          image VARCHAR(1024) NOT NULL,
+          price DECIMAL(10, 2) NOT NULL,
+          description TEXT NOT NULL
+        )
+      `);
+
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS franchise (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          name VARCHAR(255) NOT NULL
+        )
+      `);
+
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS store (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          franchiseId INT NOT NULL,
+          name VARCHAR(255) NOT NULL,
+          FOREIGN KEY (franchiseId) REFERENCES franchise(id)
+        )
+      `);
+
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS userRole (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          userId INT NOT NULL,
+          role VARCHAR(255) NOT NULL,
+          objectId INT NOT NULL,
+          FOREIGN KEY (userId) REFERENCES user(id),
+          INDEX (objectId)
+        )
+      `);
+
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS dinerOrder (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          dinerId INT NOT NULL,
+          franchiseId INT NOT NULL,
+          storeId INT NOT NULL,
+          date DATETIME NOT NULL,
+          FOREIGN KEY (dinerId) REFERENCES user(id),
+          FOREIGN KEY (franchiseId) REFERENCES franchise(id),
+          FOREIGN KEY (storeId) REFERENCES store(id)
+        )
+      `);
+
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS orderItem (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          orderId INT NOT NULL,
+          itemId INT NOT NULL,
+          description VARCHAR(255) NOT NULL,
+          price DECIMAL(10, 2) NOT NULL,
+          FOREIGN KEY (orderId) REFERENCES dinerOrder(id),
+          FOREIGN KEY (itemId) REFERENCES menu(id)
+        )
       `);
 
       await this.addDefaultMenu(connection);
+      await this.addDefaultFranchises(connection);
+      await this.addDefaultUsers(connection);
 
       console.log('Database initialized successfully');
     } catch (err) {
