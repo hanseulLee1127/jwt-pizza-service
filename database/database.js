@@ -106,33 +106,29 @@ class DB {
 
   purchaseHistory = [
     {
-      id: 'ph1',
       diner: '87654321-4321-4def-9abc-987654321def',
       orders: [
         {
-          id: 'e7b6a8f2-4e1d-4d2d-9e8a-3e9c1a2b6d5f',
           franchiseId: 'e7b6a8f2-4e1d-4d2d-9e8a-3e9c1a2b6d5f',
           storeId: '12345678-1234-4abc-9def-123456789abc',
           date: '2024-03-10T00:00:00Z',
           items: [
-            { id: 'a11111111-1111-1111-1111-111111111111', description: 'Veggie', price: 0.05 },
-            { id: 'a21111111-1111-1111-1111-111111111111', description: 'Margarita', price: 0.00345 },
+            { description: 'Veggie', price: 0.05 },
+            { description: 'Margarita', price: 0.00345 },
           ],
         },
       ],
     },
     {
-      id: 'ph2',
       diner: 'abcdef12-34ab-4def-9abc-abcdef123456',
       orders: [
         {
-          id: 'e7b3423f2-4e1d-4d2d-9e8a-3e9c1a2b6d5f',
           franchiseId: 'e7b6a8f2-4e1d-4d2d-9e8a-3e9c1a2b6d5f',
           storeId: '12345678-1234-4abc-9def-123456789abc',
           date: '2023-03-10T00:00:00Z',
           items: [
-            { id: 'a4111111-1111-1111-1111-111111111111', description: 'Pepperoni', price: 0.005 },
-            { id: 'a3111111-1111-1111-1111-111111111111', description: 'Crusty', price: 0.0045 },
+            { description: 'Pepperoni', price: 0.005 },
+            { description: 'Crusty', price: 0.0045 },
           ],
         },
       ],
@@ -147,36 +143,35 @@ class DB {
         {
           name: 'SuperPie',
           admins: ['12345678-1234-4abc-9def-123456789abc'],
-          id: 'e7b6a8f2-4e1d-4d2d-9e8a-3e9c1a2b6d5f',
+
           stores: [
-            { id: '12345678-1234-4abc-9def-123456789abc', name: 'Orem', totalRevenue: 3.0 },
-            { id: '87654321-4321-4def-9abc-987654321def', name: 'Provo', totalRevenue: 5.3 },
-            { id: 'abcdef12-34ab-4def-9abc-abcdef123456', name: 'Payson', totalRevenue: 23.2 },
+            { name: 'Orem', totalRevenue: 3.0 },
+            { name: 'Provo', totalRevenue: 5.3 },
+            { name: 'Payson', totalRevenue: 23.2 },
           ],
         },
         {
           name: 'LotaPizza',
           admins: ['01234567-8901-4f4f-9f9f-9876543210ab', '65432109-8765-4e4e-9e9e-0123456789ab'],
-          id: 'abb3423f2-4e1d-4d2d-9e8a-3e9c1a2b6d77',
+
           stores: [
-            { id: 'aabbccdd-eeff-4a4a-9a9a-bbccddeeff00', name: 'Lehi', totalRevenue: 0.25 },
-            { id: '11223344-5566-4b4b-9b9b-ccddeeff0011', name: 'Springville', totalRevenue: 1.9 },
-            { id: '99887766-5544-4c4c-9c9c-bbaa99887766', name: 'American Fork', totalRevenue: 4.802 },
+            { name: 'Lehi', totalRevenue: 0.25 },
+            { name: 'Springville', totalRevenue: 1.9 },
+            { name: 'American Fork', totalRevenue: 4.802 },
           ],
         },
         {
           name: 'PizzaCorp',
           admins: ['65432109-8765-4e4e-9e9e-0123456789ab'],
-          id: '978b3423f2-4e1d-4d2d-9e8a-3e9c1a2b6d78',
-          stores: [{ id: '44556677-3322-4d4d-9d9d-ccbbaa445566', name: 'Spanish Fork', totalRevenue: 3000000 }],
+
+          stores: [{ name: 'Spanish Fork', totalRevenue: 3000000 }],
         },
       ];
 
       for (const franchise of franchises) {
-        const { name, admins, stores } = franchise;
-        const [franchiseResult] = await connection.execute(`INSERT INTO franchise (name) VALUES (?)`, [name]);
+        const [franchiseResult] = await connection.execute(`INSERT INTO franchise (name) VALUES (?)`, [franchise.name]);
         const franchiseId = franchiseResult.insertId;
-        for (const store of stores) {
+        for (const store of franchise.stores) {
           await connection.execute(`INSERT INTO store (franchiseId, name) VALUES (?, ?)`, [franchiseId, store.name]);
         }
       }
