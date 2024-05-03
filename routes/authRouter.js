@@ -17,17 +17,22 @@ authRouter.endpoints = [
     method: 'PUT',
     path: '/api/auth',
     description: 'Login existing user',
-    example: `curl -X PUT -c cookies.txt localhost:3000/api/auth -d '{"email":"d@jwt.com", "password":"a"}' -H 'Content-Type: application/json'`,
+    example: `curl -X PUT -c cookies.txt localhost:3000/api/auth -d '{"email":"a@jwt.com", "password":"a"}' -H 'Content-Type: application/json'`,
+  },
+  {
+    method: 'DELETE',
+    path: '/api/auth',
+    description: 'Logout a user',
+    example: `curl -X DELETE -c cookies.txt localhost:3000/api/auth`,
   },
 ];
 
 function setAuth(user, res) {
   const token = jwt.sign(user, config.jwtSecret);
-  res.cookie('token', token);
-  //  res.cookie('token', token, { secure: true, httpOnly: true, sameSite: 'strict', expires: new Date(Date.now() + 2400 * 3600000) });
+  res.cookie('token', token, { secure: true, httpOnly: true, sameSite: 'strict' });
 }
 
-function authenticateToken(req, res, next) {
+authRouter.authenticateToken = (req, res, next) => {
   const token = req.cookies.token || '';
   jwt.verify(token, config.jwtSecret, (err, user) => {
     if (err) {
@@ -38,8 +43,7 @@ function authenticateToken(req, res, next) {
     req.user = user;
     next();
   });
-}
-authRouter.authenticateToken = authenticateToken;
+};
 
 authRouter.post(
   '/',
@@ -63,5 +67,11 @@ authRouter.put(
     res.json(user);
   })
 );
-
+authRouter.delete(
+  '/',
+  asyncHandler(async (_, res) => {
+    res.clearCookie('token');
+    res.json({ message: 'logout successful' });
+  })
+);
 export default authRouter;
