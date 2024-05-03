@@ -85,12 +85,12 @@ class DB {
     return { id: orderId, dinerId: user.id, order };
   }
 
-  async getFranchises(user) {
+  async getFranchises(authUser) {
     const connection = await this.getConnection();
 
     const franchises = await this.query(connection, `SELECT id, name FROM franchise`);
     for (const franchise of franchises) {
-      if (user.isRole(Role.Admin)) {
+      if (authUser.isRole(Role.Admin)) {
         franchise.admins = await this.query(connection, `SELECT u.id FROM userRole AS ur JOIN user AS u ON u.id=ur.userId WHERE ur.objectId=? AND ur.role='franchisee'`, [franchise.id]);
         franchise.admins = franchise.admins.map((v) => v.id);
 
@@ -102,6 +102,25 @@ class DB {
       } else {
         franchise.stores = await this.query(connection, `SELECT id, name FROM store WHERE franchiseId=?`, [franchise.id]);
       }
+    }
+    return franchises;
+  }
+
+  async getUserFranchises(userId) {
+    const connection = await this.getConnection();
+    let franchiseIds = await this.query(connection, `SELECT objectId FROM userRole WHERE role='franchisee' AND userId=?`, [userId]);
+    franchiseIds = franchiseIds.map((v) => v.objectId);
+
+    const franchises = await this.query(connection, `SELECT id, name FROM franchise WHERE id in (${franchiseIds.join(',')})`);
+    for (const franchise of franchises) {
+      franchise.admins = await this.query(connection, `SELECT u.id FROM userRole AS ur JOIN user AS u ON u.id=ur.userId WHERE ur.objectId=? AND ur.role='franchisee'`, [franchise.id]);
+      franchise.admins = franchise.admins.map((v) => v.id);
+
+      franchise.stores = await this.query(
+        connection,
+        `select s.id, s.name, sum(oi.price) as totalRevenue from dinerOrder as do join orderItem as oi on do.id=oi.orderId right join  store as s on s.id=do.storeId where s.franchiseId=? group by s.id`,
+        [franchise.id]
+      );
     }
     return franchises;
   }
