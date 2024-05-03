@@ -15,7 +15,7 @@ curl -X POST -c cookies.txt localhost:3000/api/auth -d '{"name":"pizza diner", "
 ### Login
 
 ```sh
-curl -v -X PUT -c cookies.txt localhost:3000/api/auth -d '{"email":"d@jwt.com", "password":"a"}' -H 'Content-Type: application/json'
+curl -X PUT -c cookies.txt localhost:3000/api/auth -d '{"email":"d@jwt.com", "password":"a"}' -H 'Content-Type: application/json'
 ```
 
 ### Menu
@@ -27,7 +27,7 @@ curl localhost:3000/pizza/menu
 ### Order
 
 ```sh
-curl -b cookies.txt -X GET localhost:3000/api/pizza
+curl -b cookies.txt -X GET localhost:3000/api/pizza/order
 
 curl -b cookies.txt -X POST localhost:3000/api/pizza/order -H 'Content-Type: application/json' -d '{"franchiseId": 1, "storeId":1, "items":[{ "menuId": 1, "description": "Veggie", "price": 0.05 }]}'
 ```

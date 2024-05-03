@@ -8,7 +8,7 @@ pizzaRouter.get('/menu', async (req, res) => {
   res.send(await DB.getMenu());
 });
 
-pizzaRouter.get('/', authRouter.authenticateToken, async (req, res) => {
+pizzaRouter.get('/order', authRouter.authenticateToken, async (req, res) => {
   res.json(await DB.getOrders(req.user, req.query.page));
 });
 

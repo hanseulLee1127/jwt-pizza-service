@@ -30,6 +30,10 @@ app.use('*', (_, res) => {
     ],
   });
 });
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ message: err.message });
+});
 
 app.use((err, _, res) => {
   console.error(err.stack);

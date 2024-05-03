@@ -1,4 +1,5 @@
 import mysql from 'mysql2/promise';
+import bcrypt from 'bcrypt';
 import config from '../config.js';
 
 const Role = {
@@ -19,6 +20,8 @@ class DB {
 
   async addUser(user) {
     const connection = await this.getConnection();
+
+    user.password = await bcrypt.hash(user.password, 10);
 
     const [userResult] = await connection.execute(`INSERT INTO user (name, email, password) VALUES (?, ?, ?)`, [user.name, user.email, user.password]);
     const userId = userResult.insertId;
@@ -43,25 +46,20 @@ class DB {
 
     const [result] = await connection.execute(`SELECT * FROM user where email=?`, [email]);
     const user = result[0];
-    if (!user || user.password != password) {
+    if (!user || !(await bcrypt.compare(password, user.password))) {
       throw new Error('unknown user');
     }
     return { ...user, password: undefined };
   }
 
-  async getOrders(page = 1) {
+  async getOrders(user, page = 1) {
     const offset = this.getOffset(page, config.db.listPerPage);
-    const rows = await this.query(
-      `SELECT id, franchise, store, data 
-      FROM dinerOrder LIMIT ${offset},${config.db.listPerPage}`
-    );
-    const data = this.emptyOrRows(rows);
-    const meta = { page };
-
-    return {
-      data,
-      meta,
-    };
+    const orders = await this.query(`SELECT id, franchiseId, storeId, date FROM dinerOrder WHERE dinerId=? LIMIT ${offset},${config.db.listPerPage}`, [user.id]);
+    for (const order of orders) {
+      let items = await this.query(`SELECT id, menuId, description, price FROM orderItem WHERE orderId=?`, [order.id]);
+      order.items = items;
+    }
+    return { dinerId: user.id, orders: orders, page };
   }
 
   async addDinerOrder(user, order) {
@@ -78,13 +76,6 @@ class DB {
 
   getOffset(currentPage = 1, listPerPage) {
     return (currentPage - 1) * [listPerPage];
-  }
-
-  emptyOrRows(rows) {
-    if (!rows) {
-      return [];
-    }
-    return rows;
   }
 
   async query(sql, params) {
@@ -260,7 +251,7 @@ class DB {
     if (rowCount === 0) {
       const purchaseHistory = [
         {
-          diner: 'f@jwt.com',
+          dinerId: 'f@jwt.com',
           orders: [
             {
               franchiseId: 'SuperPie',
@@ -274,7 +265,7 @@ class DB {
           ],
         },
         {
-          diner: 'd@jwt.com',
+          dinerId: 'd@jwt.com',
           orders: [
             {
               franchiseId: 'SuperPie',
@@ -290,7 +281,7 @@ class DB {
       ];
 
       for (const purchase of purchaseHistory) {
-        const dinerId = await this.getID(connection, 'email', purchase.diner, 'user');
+        const dinerId = await this.getID(connection, 'email', purchase.dinerId, 'user');
         for (const order of purchase.orders) {
           const franchiseId = await this.getID(connection, 'name', order.franchiseId, 'franchise');
           const storeId = await this.getID(connection, 'name', order.storeId, 'store');
