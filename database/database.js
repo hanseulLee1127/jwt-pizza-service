@@ -81,59 +81,97 @@ class DB {
     const rowCount = rows[0].count;
     if (rowCount === 0) {
       const defaultUsers = [
-        { name: 'Rajah Singh', email: 'f@jwt.com', password: 'a', roles: [Role.Franchisee] },
-        { name: 'Zara Ahmed', email: 'a@jwt.com', password: 'a', roles: [Role.Admin] },
-        { name: 'Kai Chen', email: 'd@jwt.com', password: 'a', roles: [Role.Diner] },
-        { name: 'Lila Patel', email: 'lila@jwt.com', password: 'a', roles: [Role.Diner] },
-        { name: 'Aiden Kim', email: 'aiden@jwt.com', password: 'a', roles: [Role.Diner] },
-        { name: 'Sofia Nguyen', email: 'sofia@jwt.com', password: 'a', roles: [Role.Diner] },
-        { name: 'Emilio Costa', email: 'emilio@jwt.com', password: 'a', roles: [Role.Diner] },
-        { name: 'Amara Ali', email: 'amara@jwt.com', password: 'a', roles: [Role.Diner] },
-        { name: 'Nikolai Petrov', email: 'nikolai@jwt.com', password: 'a', roles: [Role.Franchisee] },
-        { name: 'Luna Santos', email: 'luna@jwt.com', password: 'a', roles: [Role.Franchisee] },
+        { name: 'Rajah Singh', email: 'f@jwt.com', password: 'a', roles: [{ franchise: 'SuperPie', role: Role.Franchisee }] },
+        { name: 'Zara Ahmed', email: 'a@jwt.com', password: 'a', roles: [{ role: Role.Admin }] },
+        { name: 'Kai Chen', email: 'd@jwt.com', password: 'a', roles: [{ role: Role.Diner }] },
+        { name: 'Lila Patel', email: 'lila@jwt.com', password: 'a', roles: [{ role: Role.Diner }] },
+        { name: 'Aiden Kim', email: 'aiden@jwt.com', password: 'a', roles: [{ role: Role.Diner }] },
+        { name: 'Sofia Nguyen', email: 'sofia@jwt.com', password: 'a', roles: [{ role: Role.Diner }] },
+        { name: 'Emilio Costa', email: 'emilio@jwt.com', password: 'a', roles: [{ role: Role.Diner }] },
+        { name: 'Amara Ali', email: 'amara@jwt.com', password: 'a', roles: [{ role: Role.Diner }] },
+        { name: 'Nikolai Petrov', email: 'nikolai@jwt.com', password: 'a', roles: [{ franchise: 'LotaPizza', role: Role.Franchisee }] },
+        { name: 'Luna Santos', email: 'luna@jwt.com', password: 'a', roles: [{ franchise: 'LotaPizza', role: Role.Franchisee }] },
       ];
 
       for (const user of defaultUsers) {
-        await connection.execute(`INSERT INTO user (name, email, password) VALUES (?, ?, ?)`, [user.name, user.email, user.password]);
-      }
+        const [userResult] = await connection.execute(`INSERT INTO user (name, email, password) VALUES (?, ?, ?)`, [user.name, user.email, user.password]);
 
-      // We need to enhance the role information and add it to the database here.
-      // for (const adminId of admins) {
-      //   await connection.execute(`INSERT INTO userRole (userId, role, objectId) VALUES (?, ?, ?)`, [adminId, Role.Admin, franchiseId]);
-      // }
+        const userId = userResult.insertId;
+
+        for (const role of user.roles) {
+          switch (role.role) {
+            case Role.Franchisee: {
+              const franchiseId = await this.getID(connection, 'name', role.franchise, 'franchise');
+              await connection.execute(`INSERT INTO userRole (userId, role, objectId) VALUES (?, ?, ?)`, [userId, role.role, franchiseId]);
+              break;
+            }
+            default: {
+              await connection.execute(`INSERT INTO userRole (userId, role, objectId) VALUES (?, ?, ?)`, [userId, role.role, 0]);
+              break;
+            }
+          }
+        }
+      }
     }
   }
 
-  purchaseHistory = [
-    {
-      diner: '87654321-4321-4def-9abc-987654321def',
-      orders: [
+  async addDefaultPurchases(connection) {
+    const [rows] = await connection.execute(`SELECT COUNT(*) as count FROM dinerOrder`);
+    const rowCount = rows[0].count;
+    if (rowCount === 0) {
+      const purchaseHistory = [
         {
-          franchiseId: 'e7b6a8f2-4e1d-4d2d-9e8a-3e9c1a2b6d5f',
-          storeId: '12345678-1234-4abc-9def-123456789abc',
-          date: '2024-03-10T00:00:00Z',
-          items: [
-            { description: 'Veggie', price: 0.05 },
-            { description: 'Margarita', price: 0.00345 },
+          diner: 'f@jwt.com',
+          orders: [
+            {
+              franchiseId: 'SuperPie',
+              storeId: 'Orem',
+              date: '2024-03-10T00:00:00Z',
+              items: [
+                { description: 'Veggie', price: 0.05 },
+                { description: 'Margarita', price: 0.00345 },
+              ],
+            },
           ],
         },
-      ],
-    },
-    {
-      diner: 'abcdef12-34ab-4def-9abc-abcdef123456',
-      orders: [
         {
-          franchiseId: 'e7b6a8f2-4e1d-4d2d-9e8a-3e9c1a2b6d5f',
-          storeId: '12345678-1234-4abc-9def-123456789abc',
-          date: '2023-03-10T00:00:00Z',
-          items: [
-            { description: 'Pepperoni', price: 0.005 },
-            { description: 'Crusty', price: 0.0045 },
+          diner: 'd@jwt.com',
+          orders: [
+            {
+              franchiseId: 'SuperPie',
+              storeId: 'Provo',
+              date: '2023-03-10T00:00:00Z',
+              items: [
+                { description: 'Pepperoni', price: 0.005 },
+                { description: 'Crusty', price: 0.0045 },
+              ],
+            },
           ],
         },
-      ],
-    },
-  ];
+      ];
+
+      for (const purchase of purchaseHistory) {
+        const dinerId = await this.getID(connection, 'email', purchase.diner, 'user');
+        for (const order of purchase.orders) {
+          const franchiseId = await this.getID(connection, 'name', order.franchiseId, 'franchise');
+          const storeId = await this.getID(connection, 'name', order.storeId, 'store');
+          const [dinerOrderResult] = await connection.execute(`INSERT INTO dinerOrder (dinerId, franchiseId, storeId, date) VALUES (?, ?, ?, now())`, [dinerId, franchiseId, storeId]);
+          for (const item of order.items) {
+            const menuId = await this.getID(connection, 'title', item.description, 'menu');
+            await connection.execute(`INSERT INTO orderItem (orderId, menuId, description, price) VALUES (?, ?, ?, ?)`, [dinerOrderResult.insertId, menuId, item.description, item.price]);
+          }
+        }
+      }
+    }
+  }
+
+  async getID(connection, key, value, table) {
+    const [rows] = await connection.execute(`SELECT id FROM ${table} WHERE ${key}=?`, [value]);
+    if (rows.length > 0) {
+      return rows[0].id;
+    }
+    throw new Error('No ID found');
+  }
 
   async addDefaultFranchises(connection) {
     const [rows] = await connection.execute(`SELECT COUNT(*) as count FROM franchise`);
@@ -188,7 +226,6 @@ class DB {
       });
 
       await connection.query(`CREATE DATABASE IF NOT EXISTS ${config.db.connection.database}`);
-
       await connection.query(`USE ${config.db.connection.database}`);
 
       await connection.query(`
@@ -254,17 +291,18 @@ class DB {
         CREATE TABLE IF NOT EXISTS orderItem (
           id INT AUTO_INCREMENT PRIMARY KEY,
           orderId INT NOT NULL,
-          itemId INT NOT NULL,
+          menuId INT NOT NULL,
           description VARCHAR(255) NOT NULL,
           price DECIMAL(10, 2) NOT NULL,
           FOREIGN KEY (orderId) REFERENCES dinerOrder(id),
-          FOREIGN KEY (itemId) REFERENCES menu(id)
+          FOREIGN KEY (menuId) REFERENCES menu(id)
         )
       `);
 
       await this.addDefaultMenu(connection);
       await this.addDefaultFranchises(connection);
       await this.addDefaultUsers(connection);
+      await this.addDefaultPurchases(connection);
 
       console.log('Database initialized successfully');
     } catch (err) {
