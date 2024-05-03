@@ -90,7 +90,7 @@ class DB {
 
     const franchises = await this.query(connection, `SELECT id, name FROM franchise`);
     for (const franchise of franchises) {
-      if (authUser.isRole(Role.Admin)) {
+      if (authUser?.isRole(Role.Admin)) {
         franchise.admins = await this.query(connection, `SELECT u.id FROM userRole AS ur JOIN user AS u ON u.id=ur.userId WHERE ur.objectId=? AND ur.role='franchisee'`, [franchise.id]);
         franchise.admins = franchise.admins.map((v) => v.id);
 

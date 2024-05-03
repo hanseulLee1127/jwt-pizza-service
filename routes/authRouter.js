@@ -24,6 +24,7 @@ authRouter.endpoints = [
 function setAuth(user, res) {
   const token = jwt.sign(user, config.jwtSecret);
   res.cookie('token', token);
+  //  res.cookie('token', token, { secure: true, httpOnly: true, sameSite: 'strict', expires: new Date(Date.now() + 2400 * 3600000) });
 }
 
 function authenticateToken(req, res, next) {

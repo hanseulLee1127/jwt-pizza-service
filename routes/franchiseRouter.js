@@ -6,13 +6,12 @@ import { asyncHandler } from '../endpointHelper.js';
 const franchiseRouter = express.Router();
 
 franchiseRouter.endpoints = [
-  { method: 'GET', path: '/api/franchise', requiresAuth: true, description: 'List all the franchises', example: `curl -b cookies.txt localhost:3000/api/franchise` },
+  { method: 'GET', path: '/api/franchise', description: 'List all the franchises', example: `curl -b cookies.txt localhost:3000/api/franchise` },
   { method: 'GET', path: '/api/franchise/:userId', requiresAuth: true, description: `List a user's franchises`, example: `curl -b cookies.txt localhost:3000/api/franchise/1` },
 ];
 
 franchiseRouter.get(
   '/',
-  authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
     res.json(await DB.getFranchises(req.user));
   })

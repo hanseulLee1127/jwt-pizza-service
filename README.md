@@ -30,3 +30,5 @@ npm -g install nodemon
 
 1. Inject on order description
 1. Escalation on add user with a given role
+1. Doesn't delete cookie on logout
+1. Reveals config `server: Express`
