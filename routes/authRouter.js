@@ -6,7 +6,7 @@ import { DB, Role } from '../database/database.js';
 const authRouter = express.Router();
 
 function setAuth(user, res) {
-  const token = jwt.sign({ email: user.email }, config.jwtSecret);
+  const token = jwt.sign(user, config.jwtSecret);
   res.cookie('token', token);
 }
 
@@ -23,17 +23,11 @@ function authenticateToken(req, res, next) {
 }
 authRouter.authenticateToken = authenticateToken;
 
-authRouter.put('/', (req, res) => {
+authRouter.put('/', async (req, res) => {
   const { email, password } = req.body;
-  if (!users.has(email)) {
-    return res.status(400).json({ message: 'user does not exist' });
-  }
-  const user = users.get(email);
-  if (user.password !== password) {
-    return res.status(401).json({ message: 'incorrect password' });
-  }
+  const user = await DB.getUser(email, password);
   setAuth(user, res);
-  res.json({ ...user, password: undefined });
+  res.json(user);
 });
 
 authRouter.post('/', async (req, res) => {
@@ -41,10 +35,9 @@ authRouter.post('/', async (req, res) => {
   if (!name || !email || !password) {
     return res.status(400).json({ message: 'name, email, and password are required' });
   }
-  const user = { name, email, password, roles: [{ role: Role.Diner }] };
-  await DB.addUser(user);
+  const user = await DB.addUser({ name, email, password, roles: [{ role: Role.Diner }] });
   setAuth(user, res);
-  res.json({ ...user, password: undefined });
+  res.json(user);
 });
 
 export default authRouter;

@@ -35,6 +35,18 @@ class DB {
         }
       }
     }
+    return { ...user, id: userId, password: undefined };
+  }
+
+  async getUser(email, password) {
+    const connection = await this.getConnection();
+
+    const [result] = await connection.execute(`SELECT * FROM user where email=?`, [email]);
+    const user = result[0];
+    if (!user || user.password != password) {
+      throw new Error('unknown user');
+    }
+    return { ...user, password: undefined };
   }
 
   async getOrders(page = 1) {
@@ -52,21 +64,16 @@ class DB {
     };
   }
 
-  async addDinerOrder(dinerOrder) {
-    // curl -X POST localhost:3000/api/order -H 'Content-Type: application/json' -d '{ "diner": 1, "orders":[{"franchiseId": 1, "storeId":1, "date": "2024-03-10T00:00:00Z", "items":[{ "menuId": 1, "description": "Veggie", "price": 0.05 }] }]}'
+  async addDinerOrder(user, order) {
+    const connection = await this.getConnection();
 
-    for (const order of dinerOrder.orders) {
-      const [dinerOrderResult] = await connection.execute(`INSERT INTO dinerOrder (dinerId, franchiseId, storeId, date) VALUES (?, ?, ?, ?)`, [
-        dinerOrder.diner,
-        order.franchiseId,
-        order.storeId,
-        order.date,
-      ]);
-      for (const item of order.items) {
-        const menuId = await this.getID(connection, 'description', item.menuId, 'menu');
-        await connection.execute(`INSERT INTO orderItem (orderId, menuId, description, price) VALUES (?, ?, ?, ?)`, [dinerOrderResult.insertId, menuId, item.description, item.price]);
-      }
+    const [orderResult] = await connection.execute(`INSERT INTO dinerOrder (dinerId, franchiseId, storeId, date) VALUES (?, ?, ?, now())`, [user.id, order.franchiseId, order.storeId]);
+    const orderId = orderResult.insertId;
+    for (const item of order.items) {
+      const menuId = await this.getID(connection, 'id', item.menuId, 'menu');
+      await connection.execute(`INSERT INTO orderItem (orderId, menuId, description, price) VALUES (?, ?, ?, ?)`, [orderId, menuId, item.description, item.price]);
     }
+    return { id: orderId, dinerId: user.id, order };
   }
 
   getOffset(currentPage = 1, listPerPage) {
