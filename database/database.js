@@ -1,7 +1,7 @@
 import mysql from 'mysql2/promise';
 import bcrypt from 'bcrypt';
 import config from '../config.js';
-import { StatusCodeError } from '../helper.js';
+import { StatusCodeError } from '../endpointHelper.js';
 
 const Role = {
   Diner: 'diner',

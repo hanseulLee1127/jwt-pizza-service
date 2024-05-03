@@ -21,15 +21,11 @@ apiRouter.use('/auth', authRouter);
 app.use('*', (_, res) => {
   res.status(404).send({
     message: 'welcome to the JWT Pizza',
-    endpoints: [
-      { method: 'POST', path: '/api/auth', description: 'Create a new user' },
-      { method: 'PUT', path: '/api/auth', description: 'Login existing user' },
-      { method: 'GET', path: '/api/pizza/menu', description: 'Get the pizza menu' },
-      { method: 'GET', path: '/api/pizza', description: 'Get the orders' },
-      { method: 'POST', path: '/api/pizza/order', description: 'Add a new order' },
-    ],
+    endpoints: [...authRouter.endpoints, ...pizzaRouter.endpoints],
   });
 });
+
+// Default error handler for all exceptions and errors.
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(err.statusCode ?? 500).json({ message: err.message });

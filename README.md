@@ -1,35 +1,15 @@
 # jwt-pizza-service
 
-Backend service for making JWT pizzas. This service tracks users and franchises. All order requests are passed to the JWT Pizza Factory where the pizzas are made.
+Backend service for making JWT pizzas. This service tracks users and franchises and orders pizzas. All order requests are passed to the JWT Pizza Factory where the pizzas are made.
 
 JWTs are used for authentication objects.
 
 ## Endpoints
 
-### Register
+You can get the documentation for all endpoints by making the following request.
 
 ```sh
-curl -X POST -c cookies.txt localhost:3000/api/auth -d '{"name":"pizza diner", "email":"d@jwt.com", "password":"a"}' -H 'Content-Type: application/json'
-```
-
-### Login
-
-```sh
-curl -X PUT -c cookies.txt localhost:3000/api/auth -d '{"email":"d@jwt.com", "password":"a"}' -H 'Content-Type: application/json'
-```
-
-### Menu
-
-```sh
-curl localhost:3000/pizza/menu
-```
-
-### Order
-
-```sh
-curl -b cookies.txt -X GET localhost:3000/api/pizza/order
-
-curl -b cookies.txt -X POST localhost:3000/api/pizza/order -H 'Content-Type: application/json' -d '{"franchiseId": 1, "storeId":1, "items":[{ "menuId": 1, "description": "Veggie", "price": 0.05 }]}'
+curl localhost:3000/api
 ```
 
 ## Development notes
