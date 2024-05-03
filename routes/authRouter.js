@@ -33,6 +33,7 @@ function authenticateToken(req, res, next) {
       return res.status(401).send({ message: 'unauthorized' });
     }
 
+    user.isRole = (role) => !!user.roles.find((r) => r.role === role);
     req.user = user;
     next();
   });

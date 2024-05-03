@@ -1,7 +1,8 @@
 import express from 'express';
 import cookieParser from 'cookie-parser';
-import pizzaRouter from './routes/pizzaRouter.js';
 import authRouter from './routes/authRouter.js';
+import pizzaRouter from './routes/pizzaRouter.js';
+import franchiseRouter from './routes/franchiseRouter.js';
 
 const app = express();
 app.use(express.json());
@@ -15,8 +16,9 @@ app.use((req, res, next) => {
 
 const apiRouter = express.Router();
 app.use('/api', apiRouter);
-apiRouter.use('/pizza', pizzaRouter);
 apiRouter.use('/auth', authRouter);
+apiRouter.use('/pizza', pizzaRouter);
+apiRouter.use('/franchise', franchiseRouter);
 
 app.use('*', (_, res) => {
   res.status(404).send({

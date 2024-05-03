@@ -15,7 +15,9 @@ class DB {
   }
 
   async getMenu() {
-    const rows = await this.query(`SELECT * FROM menu`);
+    const connection = await this.getConnection();
+
+    const rows = await this.query(connection, `SELECT * FROM menu`);
     return rows;
   }
 
@@ -24,17 +26,17 @@ class DB {
 
     user.password = await bcrypt.hash(user.password, 10);
 
-    const [userResult] = await connection.execute(`INSERT INTO user (name, email, password) VALUES (?, ?, ?)`, [user.name, user.email, user.password]);
+    const userResult = await this.query(connection, `INSERT INTO user (name, email, password) VALUES (?, ?, ?)`, [user.name, user.email, user.password]);
     const userId = userResult.insertId;
     for (const role of user.roles) {
       switch (role.role) {
         case Role.Franchisee: {
-          const franchiseId = await this.getID(connection, 'name', role.franchise, 'franchise');
-          await connection.execute(`INSERT INTO userRole (userId, role, objectId) VALUES (?, ?, ?)`, [userId, role.role, franchiseId]);
+          const franchiseId = await this.getID(connection, 'name', role.object, 'franchise');
+          await this.query(connection, `INSERT INTO userRole (userId, role, objectId) VALUES (?, ?, ?)`, [userId, role.role, franchiseId]);
           break;
         }
         default: {
-          await connection.execute(`INSERT INTO userRole (userId, role, objectId) VALUES (?, ?, ?)`, [userId, role.role, 0]);
+          await this.query(connection, `INSERT INTO userRole (userId, role, objectId) VALUES (?, ?, ?)`, [userId, role.role, 0]);
           break;
         }
       }
@@ -45,19 +47,27 @@ class DB {
   async getUser(email, password) {
     const connection = await this.getConnection();
 
-    const [result] = await connection.execute(`SELECT * FROM user where email=?`, [email]);
-    const user = result[0];
+    const userResult = await this.query(connection, `SELECT * FROM user where email=?`, [email]);
+    const user = userResult[0];
     if (!user || !(await bcrypt.compare(password, user.password))) {
       throw new StatusCodeError('unknown user', 404);
     }
-    return { ...user, password: undefined };
+
+    const roleResult = await this.query(connection, `SELECT * FROM userRole where userId=?`, [user.id]);
+    const roles = roleResult.map((r) => {
+      return { objectId: r.objectId || undefined, role: r.role };
+    });
+
+    return { ...user, roles: roles, password: undefined };
   }
 
   async getOrders(user, page = 1) {
+    const connection = await this.getConnection();
+
     const offset = this.getOffset(page, config.db.listPerPage);
-    const orders = await this.query(`SELECT id, franchiseId, storeId, date FROM dinerOrder WHERE dinerId=? LIMIT ${offset},${config.db.listPerPage}`, [user.id]);
+    const orders = await this.query(connection, `SELECT id, franchiseId, storeId, date FROM dinerOrder WHERE dinerId=? LIMIT ${offset},${config.db.listPerPage}`, [user.id]);
     for (const order of orders) {
-      let items = await this.query(`SELECT id, menuId, description, price FROM orderItem WHERE orderId=?`, [order.id]);
+      let items = await this.query(connection, `SELECT id, menuId, description, price FROM orderItem WHERE orderId=?`, [order.id]);
       order.items = items;
     }
     return { dinerId: user.id, orders: orders, page };
@@ -66,24 +76,51 @@ class DB {
   async addDinerOrder(user, order) {
     const connection = await this.getConnection();
 
-    const [orderResult] = await connection.execute(`INSERT INTO dinerOrder (dinerId, franchiseId, storeId, date) VALUES (?, ?, ?, now())`, [user.id, order.franchiseId, order.storeId]);
+    const orderResult = await this.query(connection, `INSERT INTO dinerOrder (dinerId, franchiseId, storeId, date) VALUES (?, ?, ?, now())`, [user.id, order.franchiseId, order.storeId]);
     const orderId = orderResult.insertId;
     for (const item of order.items) {
       const menuId = await this.getID(connection, 'id', item.menuId, 'menu');
-      await connection.execute(`INSERT INTO orderItem (orderId, menuId, description, price) VALUES (?, ?, ?, ?)`, [orderId, menuId, item.description, item.price]);
+      await this.query(connection, `INSERT INTO orderItem (orderId, menuId, description, price) VALUES (?, ?, ?, ?)`, [orderId, menuId, item.description, item.price]);
     }
     return { id: orderId, dinerId: user.id, order };
+  }
+
+  async getFranchises(user) {
+    const connection = await this.getConnection();
+
+    const franchises = await this.query(connection, `SELECT id, name FROM franchise`);
+    for (const franchise of franchises) {
+      if (user.isRole(Role.Admin)) {
+        franchise.admins = await this.query(connection, `SELECT u.id FROM userRole AS ur JOIN user AS u ON u.id=ur.userId WHERE ur.objectId=? AND ur.role='franchisee'`, [franchise.id]);
+        franchise.admins = franchise.admins.map((v) => v.id);
+
+        franchise.stores = await this.query(
+          connection,
+          `select s.id, s.name, sum(oi.price) as totalRevenue from dinerOrder as do join orderItem as oi on do.id=oi.orderId right join  store as s on s.id=do.storeId where s.franchiseId=? group by s.id`,
+          [franchise.id]
+        );
+      } else {
+        franchise.stores = await this.query(connection, `SELECT id, name FROM store WHERE franchiseId=?`, [franchise.id]);
+      }
+    }
+    return franchises;
   }
 
   getOffset(currentPage = 1, listPerPage) {
     return (currentPage - 1) * [listPerPage];
   }
 
-  async query(sql, params) {
-    const connection = await mysql.createConnection(config.db.connection);
+  async query(connection, sql, params) {
     const [results] = await connection.execute(sql, params);
-
     return results;
+  }
+
+  async getID(connection, key, value, table) {
+    const [rows] = await connection.execute(`SELECT id FROM ${table} WHERE ${key}=?`, [value]);
+    if (rows.length > 0) {
+      return rows[0].id;
+    }
+    throw new Error('No ID found');
   }
 
   async getConnection(setUse = true) {
@@ -184,7 +221,7 @@ class DB {
 
       console.log('Database initialized successfully');
     } catch (err) {
-      console.error('Error initializing database:', err.message);
+      console.error('Error initializing database:', err.message, err.stack);
     }
   }
 
@@ -212,7 +249,15 @@ class DB {
     const rowCount = rows[0].count;
     if (rowCount === 0) {
       const defaultUsers = [
-        { name: 'Rajah Singh', email: 'f@jwt.com', password: 'a', roles: [{ franchise: 'SuperPie', role: Role.Franchisee }] },
+        {
+          name: 'Rajah Singh',
+          email: 'f@jwt.com',
+          password: 'a',
+          roles: [
+            { object: 'SuperPie', role: Role.Franchisee },
+            { object: 'PizzaCorp', role: Role.Franchisee },
+          ],
+        },
         { name: 'Zara Ahmed', email: 'a@jwt.com', password: 'a', roles: [{ role: Role.Admin }] },
         { name: 'Kai Chen', email: 'd@jwt.com', password: 'a', roles: [{ role: Role.Diner }] },
         { name: 'Lila Patel', email: 'lila@jwt.com', password: 'a', roles: [{ role: Role.Diner }] },
@@ -220,28 +265,12 @@ class DB {
         { name: 'Sofia Nguyen', email: 'sofia@jwt.com', password: 'a', roles: [{ role: Role.Diner }] },
         { name: 'Emilio Costa', email: 'emilio@jwt.com', password: 'a', roles: [{ role: Role.Diner }] },
         { name: 'Amara Ali', email: 'amara@jwt.com', password: 'a', roles: [{ role: Role.Diner }] },
-        { name: 'Nikolai Petrov', email: 'nikolai@jwt.com', password: 'a', roles: [{ franchise: 'LotaPizza', role: Role.Franchisee }] },
-        { name: 'Luna Santos', email: 'luna@jwt.com', password: 'a', roles: [{ franchise: 'LotaPizza', role: Role.Franchisee }] },
+        { name: 'Nikolai Petrov', email: 'nikolai@jwt.com', password: 'a', roles: [{ object: 'LotaPizza', role: Role.Franchisee }] },
+        { name: 'Luna Santos', email: 'luna@jwt.com', password: 'a', roles: [{ object: 'LotaPizza', role: Role.Franchisee }] },
       ];
 
       for (const user of defaultUsers) {
-        const [userResult] = await connection.execute(`INSERT INTO user (name, email, password) VALUES (?, ?, ?)`, [user.name, user.email, user.password]);
-
-        const userId = userResult.insertId;
-
-        for (const role of user.roles) {
-          switch (role.role) {
-            case Role.Franchisee: {
-              const franchiseId = await this.getID(connection, 'name', role.franchise, 'franchise');
-              await connection.execute(`INSERT INTO userRole (userId, role, objectId) VALUES (?, ?, ?)`, [userId, role.role, franchiseId]);
-              break;
-            }
-            default: {
-              await connection.execute(`INSERT INTO userRole (userId, role, objectId) VALUES (?, ?, ?)`, [userId, role.role, 0]);
-              break;
-            }
-          }
-        }
+        await this.addUser(user);
       }
     }
   }
@@ -296,14 +325,6 @@ class DB {
     }
   }
 
-  async getID(connection, key, value, table) {
-    const [rows] = await connection.execute(`SELECT id FROM ${table} WHERE ${key}=?`, [value]);
-    if (rows.length > 0) {
-      return rows[0].id;
-    }
-    throw new Error('No ID found');
-  }
-
   async addDefaultFranchises(connection) {
     const [rows] = await connection.execute(`SELECT COUNT(*) as count FROM franchise`);
     const rowCount = rows[0].count;
@@ -311,8 +332,6 @@ class DB {
       const franchises = [
         {
           name: 'SuperPie',
-          admins: ['12345678-1234-4abc-9def-123456789abc'],
-
           stores: [
             { name: 'Orem', totalRevenue: 3.0 },
             { name: 'Provo', totalRevenue: 5.3 },
@@ -321,8 +340,6 @@ class DB {
         },
         {
           name: 'LotaPizza',
-          admins: ['01234567-8901-4f4f-9f9f-9876543210ab', '65432109-8765-4e4e-9e9e-0123456789ab'],
-
           stores: [
             { name: 'Lehi', totalRevenue: 0.25 },
             { name: 'Springville', totalRevenue: 1.9 },
@@ -331,8 +348,6 @@ class DB {
         },
         {
           name: 'PizzaCorp',
-          admins: ['65432109-8765-4e4e-9e9e-0123456789ab'],
-
           stores: [{ name: 'Spanish Fork', totalRevenue: 3000000 }],
         },
       ];

@@ -25,3 +25,8 @@ Nodemon is assumed to be installed globally so that you can have hot reloading w
 ```sh
 npm -g install nodemon
 ```
+
+## Known security vulnerabilities
+
+1. Inject on order description
+1. Escalation on add user with a given role
