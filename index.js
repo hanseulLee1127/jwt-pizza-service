@@ -19,7 +19,7 @@ apiRouter.use('/pizza', pizzaRouter);
 apiRouter.use('/auth', authRouter);
 
 app.use('*', (_, res) => {
-  res.send({
+  res.status(404).send({
     message: 'welcome to the JWT Pizza',
     endpoints: [
       { method: 'POST', path: '/api/auth', description: 'Create a new user' },

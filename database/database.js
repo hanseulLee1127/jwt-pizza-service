@@ -17,6 +17,26 @@ class DB {
     return rows;
   }
 
+  async addUser(user) {
+    const connection = await this.getConnection();
+
+    const [userResult] = await connection.execute(`INSERT INTO user (name, email, password) VALUES (?, ?, ?)`, [user.name, user.email, user.password]);
+    const userId = userResult.insertId;
+    for (const role of user.roles) {
+      switch (role.role) {
+        case Role.Franchisee: {
+          const franchiseId = await this.getID(connection, 'name', role.franchise, 'franchise');
+          await connection.execute(`INSERT INTO userRole (userId, role, objectId) VALUES (?, ?, ?)`, [userId, role.role, franchiseId]);
+          break;
+        }
+        default: {
+          await connection.execute(`INSERT INTO userRole (userId, role, objectId) VALUES (?, ?, ?)`, [userId, role.role, 0]);
+          break;
+        }
+      }
+    }
+  }
+
   async getOrders(page = 1) {
     const offset = this.getOffset(page, config.db.listPerPage);
     const rows = await this.query(
@@ -32,11 +52,21 @@ class DB {
     };
   }
 
-  async addOrder(order) {
-    const sql = `INSERT INTO dinerOrder (franchise, store, data) VALUES (?, ?, ?)`;
-    const result = await this.query(sql, [order.franchise, order.store, order.data]);
-    order.id = result.insertId;
-    return order;
+  async addDinerOrder(dinerOrder) {
+    // curl -X POST localhost:3000/api/order -H 'Content-Type: application/json' -d '{ "diner": 1, "orders":[{"franchiseId": 1, "storeId":1, "date": "2024-03-10T00:00:00Z", "items":[{ "menuId": 1, "description": "Veggie", "price": 0.05 }] }]}'
+
+    for (const order of dinerOrder.orders) {
+      const [dinerOrderResult] = await connection.execute(`INSERT INTO dinerOrder (dinerId, franchiseId, storeId, date) VALUES (?, ?, ?, ?)`, [
+        dinerOrder.diner,
+        order.franchiseId,
+        order.storeId,
+        order.date,
+      ]);
+      for (const item of order.items) {
+        const menuId = await this.getID(connection, 'description', item.menuId, 'menu');
+        await connection.execute(`INSERT INTO orderItem (orderId, menuId, description, price) VALUES (?, ?, ?, ?)`, [dinerOrderResult.insertId, menuId, item.description, item.price]);
+      }
+    }
   }
 
   getOffset(currentPage = 1, listPerPage) {
@@ -55,6 +85,108 @@ class DB {
     const [results] = await connection.execute(sql, params);
 
     return results;
+  }
+
+  async getConnection(setUse = true) {
+    const connection = await mysql.createConnection({
+      host: config.db.connection.host,
+      user: config.db.connection.user,
+      password: config.db.connection.password,
+      connectTimeout: config.db.connection.connectTimeout,
+    });
+    if (setUse) {
+      await connection.query(`USE ${config.db.connection.database}`);
+    }
+    return connection;
+  }
+
+  async initializeDatabase() {
+    try {
+      const connection = await this.getConnection(false);
+
+      await connection.query(`CREATE DATABASE IF NOT EXISTS ${config.db.connection.database}`);
+      await connection.query(`USE ${config.db.connection.database}`);
+
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS user (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          email VARCHAR(255) NOT NULL,
+          password VARCHAR(255) NOT NULL
+        )
+      `);
+
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS menu (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          title VARCHAR(255) NOT NULL,
+          image VARCHAR(1024) NOT NULL,
+          price DECIMAL(10, 2) NOT NULL,
+          description TEXT NOT NULL
+        )
+      `);
+
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS franchise (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          name VARCHAR(255) NOT NULL
+        )
+      `);
+
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS store (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          franchiseId INT NOT NULL,
+          name VARCHAR(255) NOT NULL,
+          FOREIGN KEY (franchiseId) REFERENCES franchise(id)
+        )
+      `);
+
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS userRole (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          userId INT NOT NULL,
+          role VARCHAR(255) NOT NULL,
+          objectId INT NOT NULL,
+          FOREIGN KEY (userId) REFERENCES user(id),
+          INDEX (objectId)
+        )
+      `);
+
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS dinerOrder (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          dinerId INT NOT NULL,
+          franchiseId INT NOT NULL,
+          storeId INT NOT NULL,
+          date DATETIME NOT NULL,
+          FOREIGN KEY (dinerId) REFERENCES user(id),
+          FOREIGN KEY (franchiseId) REFERENCES franchise(id),
+          FOREIGN KEY (storeId) REFERENCES store(id)
+        )
+      `);
+
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS orderItem (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          orderId INT NOT NULL,
+          menuId INT NOT NULL,
+          description VARCHAR(255) NOT NULL,
+          price DECIMAL(10, 2) NOT NULL,
+          FOREIGN KEY (orderId) REFERENCES dinerOrder(id),
+          FOREIGN KEY (menuId) REFERENCES menu(id)
+        )
+      `);
+
+      await this.addDefaultMenu(connection);
+      await this.addDefaultFranchises(connection);
+      await this.addDefaultUsers(connection);
+      await this.addDefaultPurchases(connection);
+
+      console.log('Database initialized successfully');
+    } catch (err) {
+      console.error('Error initializing database:', err.message);
+    }
   }
 
   async addDefaultMenu(connection) {
@@ -215,100 +347,7 @@ class DB {
       }
     }
   }
-
-  async initializeDatabase() {
-    try {
-      const connection = await mysql.createConnection({
-        host: config.db.connection.host,
-        user: config.db.connection.user,
-        password: config.db.connection.password,
-        connectTimeout: config.db.connection.connectTimeout,
-      });
-
-      await connection.query(`CREATE DATABASE IF NOT EXISTS ${config.db.connection.database}`);
-      await connection.query(`USE ${config.db.connection.database}`);
-
-      await connection.query(`
-        CREATE TABLE IF NOT EXISTS user (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          name VARCHAR(255) NOT NULL,
-          email VARCHAR(255) NOT NULL,
-          password VARCHAR(255) NOT NULL
-        )
-      `);
-
-      await connection.query(`
-        CREATE TABLE IF NOT EXISTS menu (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          title VARCHAR(255) NOT NULL,
-          image VARCHAR(1024) NOT NULL,
-          price DECIMAL(10, 2) NOT NULL,
-          description TEXT NOT NULL
-        )
-      `);
-
-      await connection.query(`
-        CREATE TABLE IF NOT EXISTS franchise (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          name VARCHAR(255) NOT NULL
-        )
-      `);
-
-      await connection.query(`
-        CREATE TABLE IF NOT EXISTS store (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          franchiseId INT NOT NULL,
-          name VARCHAR(255) NOT NULL,
-          FOREIGN KEY (franchiseId) REFERENCES franchise(id)
-        )
-      `);
-
-      await connection.query(`
-        CREATE TABLE IF NOT EXISTS userRole (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          userId INT NOT NULL,
-          role VARCHAR(255) NOT NULL,
-          objectId INT NOT NULL,
-          FOREIGN KEY (userId) REFERENCES user(id),
-          INDEX (objectId)
-        )
-      `);
-
-      await connection.query(`
-        CREATE TABLE IF NOT EXISTS dinerOrder (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          dinerId INT NOT NULL,
-          franchiseId INT NOT NULL,
-          storeId INT NOT NULL,
-          date DATETIME NOT NULL,
-          FOREIGN KEY (dinerId) REFERENCES user(id),
-          FOREIGN KEY (franchiseId) REFERENCES franchise(id),
-          FOREIGN KEY (storeId) REFERENCES store(id)
-        )
-      `);
-
-      await connection.query(`
-        CREATE TABLE IF NOT EXISTS orderItem (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          orderId INT NOT NULL,
-          menuId INT NOT NULL,
-          description VARCHAR(255) NOT NULL,
-          price DECIMAL(10, 2) NOT NULL,
-          FOREIGN KEY (orderId) REFERENCES dinerOrder(id),
-          FOREIGN KEY (menuId) REFERENCES menu(id)
-        )
-      `);
-
-      await this.addDefaultMenu(connection);
-      await this.addDefaultFranchises(connection);
-      await this.addDefaultUsers(connection);
-      await this.addDefaultPurchases(connection);
-
-      console.log('Database initialized successfully');
-    } catch (err) {
-      console.error('Error initializing database:', err.message);
-    }
-  }
 }
 
-export default new DB();
+const db = new DB();
+export { Role, db as DB };

@@ -1,12 +1,9 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import config from '../config.js';
+import { DB, Role } from '../database/database.js';
 
 const authRouter = express.Router();
-
-let _nextId = 0;
-const nextId = () => _nextId++;
-const users = new Map();
 
 function setAuth(user, res) {
   const token = jwt.sign({ email: user.email }, config.jwtSecret);
@@ -39,16 +36,13 @@ authRouter.put('/', (req, res) => {
   res.json({ ...user, password: undefined });
 });
 
-authRouter.post('/', (req, res) => {
+authRouter.post('/', async (req, res) => {
   const { name, email, password } = req.body;
   if (!name || !email || !password) {
     return res.status(400).json({ message: 'name, email, and password are required' });
   }
-  if (users.has(email)) {
-    return res.status(400).json({ message: 'user already exists' });
-  }
-  const user = { id: nextId(), name, email, password, roles: ['diner'] };
-  users.set(email, user);
+  const user = { name, email, password, roles: [{ role: Role.Diner }] };
+  await DB.addUser(user);
   setAuth(user, res);
   res.json({ ...user, password: undefined });
 });
