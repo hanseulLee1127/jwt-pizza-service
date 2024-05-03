@@ -1,6 +1,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import config from '../config.js';
+import { asyncHandler } from '../helper.js';
 import { DB, Role } from '../database/database.js';
 
 const authRouter = express.Router();
@@ -23,13 +24,6 @@ function authenticateToken(req, res, next) {
 }
 authRouter.authenticateToken = authenticateToken;
 
-authRouter.put('/', async (req, res) => {
-  const { email, password } = req.body;
-  const user = await DB.getUser(email, password);
-  setAuth(user, res);
-  res.json(user);
-});
-
 authRouter.post('/', async (req, res) => {
   const { name, email, password } = req.body;
   if (!name || !email || !password) {
@@ -39,5 +33,15 @@ authRouter.post('/', async (req, res) => {
   setAuth(user, res);
   res.json(user);
 });
+
+authRouter.put(
+  '/',
+  asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
+    const user = await DB.getUser(email, password);
+    setAuth(user, res);
+    res.json(user);
+  })
+);
 
 export default authRouter;

@@ -1,6 +1,7 @@
 import mysql from 'mysql2/promise';
 import bcrypt from 'bcrypt';
 import config from '../config.js';
+import { StatusCodeError } from '../helper.js';
 
 const Role = {
   Diner: 'diner',
@@ -47,7 +48,7 @@ class DB {
     const [result] = await connection.execute(`SELECT * FROM user where email=?`, [email]);
     const user = result[0];
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      throw new Error('unknown user');
+      throw new StatusCodeError('unknown user', 404);
     }
     return { ...user, password: undefined };
   }
