@@ -33,15 +33,17 @@ function setAuth(user, res) {
 }
 
 function setAuthUser(req, res, next) {
-  if (!req.cookies.token) next();
-
-  jwt.verify(req.cookies.token, config.jwtSecret, (err, user) => {
-    if (!err) {
-      user.isRole = (role) => !!user.roles.find((r) => r.role === role);
-      req.user = user;
-    }
+  if (!req.cookies.token) {
     next();
-  });
+  } else {
+    jwt.verify(req.cookies.token, config.jwtSecret, (err, user) => {
+      if (!err) {
+        user.isRole = (role) => !!user.roles.find((r) => r.role === role);
+        req.user = user;
+      }
+      next();
+    });
+  }
 }
 
 authRouter.authenticateToken = (req, res, next) => {

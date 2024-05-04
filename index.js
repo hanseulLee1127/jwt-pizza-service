@@ -22,9 +22,9 @@ apiRouter.use('/auth', authRouter);
 apiRouter.use('/pizza', pizzaRouter);
 apiRouter.use('/franchise', franchiseRouter);
 
-app.use('*', (_, res) => {
+app.use('*', (_req, res) => {
   res.status(404).send({
-    message: 'welcome to the JWT Pizza',
+    message: 'welcome to JWT Pizza',
     endpoints: [...authRouter.endpoints, ...pizzaRouter.endpoints],
   });
 });
