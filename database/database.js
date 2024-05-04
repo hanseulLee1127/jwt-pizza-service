@@ -85,12 +85,8 @@ class DB {
     return { id: orderId, ...order };
   }
 
-  async createFranchise(authUser, franchise) {
+  async createFranchise(franchise) {
     const connection = await this.getConnection();
-
-    if (!authUser?.isRole(Role.Admin)) {
-      throw new StatusCodeError('forbidden from creating a franchise', 403);
-    }
 
     for (const admin of franchise.admins) {
       const adminUser = await this.query(connection, `SELECT id, name FROM user WHERE email=?`, [admin.email]);
@@ -109,6 +105,20 @@ class DB {
     }
 
     return franchise;
+  }
+
+  async deleteFranchise(franchiseId) {
+    const connection = await this.getConnection();
+    await connection.beginTransaction();
+    try {
+      await this.query(connection, `DELETE FROM store WHERE franchiseId=?`, [franchiseId]);
+      await this.query(connection, `DELETE FROM userRole WHERE objectId=?`, [franchiseId]);
+      await this.query(connection, `DELETE FROM franchise WHERE id=?`, [franchiseId]);
+      await connection.commit();
+    } catch (error) {
+      await connection.rollback();
+      throw new StatusCodeError('unable to delete franchise', 500);
+    }
   }
 
   async getFranchises(authUser) {
@@ -243,9 +253,9 @@ class DB {
           franchiseId INT NOT NULL,
           storeId INT NOT NULL,
           date DATETIME NOT NULL,
-          FOREIGN KEY (dinerId) REFERENCES user(id),
-          FOREIGN KEY (franchiseId) REFERENCES franchise(id),
-          FOREIGN KEY (storeId) REFERENCES store(id)
+          INDEX (dinerId),
+          INDEX (franchiseId),
+          INDEX (storeId)
         )
       `);
 
@@ -257,7 +267,7 @@ class DB {
           description VARCHAR(255) NOT NULL,
           price DECIMAL(10, 8) NOT NULL,
           FOREIGN KEY (orderId) REFERENCES dinerOrder(id),
-          FOREIGN KEY (menuId) REFERENCES menu(id)
+          INDEX (menuId)
         )
       `);
 

@@ -32,7 +32,7 @@ app.use('*', (_req, res) => {
 // Default error handler for all exceptions and errors.
 app.use((err, _req, res, _next) => {
   console.error(err.stack);
-  res.status(err.statusCode ?? 500).json({ message: err.message });
+  res.status(err.statusCode ?? 500).json({ message: err.message, stack: err.stack });
 });
 
 const port = process.argv[2] || 3000;

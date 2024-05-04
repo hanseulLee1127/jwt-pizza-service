@@ -37,3 +37,4 @@ npm -g install nodemon
 1. Doesn't delete cookie on logout
 1. Reveals config `server: Express`
 1. If you use the same name for creating a franchise it will leak the SQL error
+1. Returns code stack with error

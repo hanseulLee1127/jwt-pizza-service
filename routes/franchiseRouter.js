@@ -12,9 +12,10 @@ franchiseRouter.endpoints = [
     method: 'POST',
     path: '/api/franchise',
     requiresAuth: true,
-    description: 'Make a new franchise',
-    example: `curl -b cookies.txt -X POST localhost:3000/api/francise -H 'Content-Type: application/json' -d '{"franchiseId": 1, "storeId":1, "items":[{ "menuId": 1, "description": "Veggie", "price": 0.05 }]}'`,
+    description: 'Create a new franchise',
+    example: `curl -b cookies.txt -X POST localhost:3000/api/franchise -H 'Content-Type: application/json' -d '{"franchiseId": 1, "storeId":1, "items":[{ "menuId": 1, "description": "Veggie", "price": 0.05 }]}'`,
   },
+  { method: 'DELETE', path: '/api/franchise/:franchiseId', requiresAuth: true, description: `Delete a franchises`, example: `curl -X DELETE -b cookies.txt localhost:3000/api/franchise/1` },
 ];
 
 franchiseRouter.get(
@@ -41,8 +42,25 @@ franchiseRouter.post(
   '/',
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
+    if (!req.user?.isRole(Role.Admin)) {
+      throw new StatusCodeError('unable to create a franchise', 403);
+    }
+
     const franchise = req.body;
-    res.send(await DB.createFranchise(req.user, franchise));
+    res.send(await DB.createFranchise(franchise));
+  })
+);
+
+franchiseRouter.delete(
+  '/:franchiseId',
+  authRouter.authenticateToken,
+  asyncHandler(async (req, res) => {
+    if (!req.user?.isRole(Role.Admin)) {
+      throw new StatusCodeError('unable to delete a franchise', 403);
+    }
+
+    await DB.deleteFranchise(req.params.franchiseId);
+    res.json({ message: 'franchise deleted' });
   })
 );
 
