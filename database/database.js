@@ -121,26 +121,13 @@ class DB {
     }
   }
 
-  async deleteStore(franchiseId, storeId) {
-    const connection = await this.getConnection();
-    await this.query(connection, `DELETE FROM store WHERE franchiseId=? AND id=?`, [franchiseId, storeId]);
-  }
-
   async getFranchises(authUser) {
     const connection = await this.getConnection();
 
     const franchises = await this.query(connection, `SELECT id, name FROM franchise`);
     for (const franchise of franchises) {
       if (authUser?.isRole(Role.Admin)) {
-        franchise.admins = await this.query(connection, `SELECT u.id, u.name, u.email FROM userRole AS ur JOIN user AS u ON u.id=ur.userId WHERE ur.objectId=? AND ur.role='franchisee'`, [
-          franchise.id,
-        ]);
-
-        franchise.stores = await this.query(
-          connection,
-          `SELECT s.id, s.name, COALESCE(SUM(oi.price), 0) AS totalRevenue FROM dinerOrder AS DO JOIN orderItem AS oi ON do.id=oi.orderId RIGHT JOIN store AS s ON s.id=do.storeId WHERE s.franchiseId=? GROUP BY s.id`,
-          [franchise.id]
-        );
+        await this.getFranchise(connection, franchise);
       } else {
         franchise.stores = await this.query(connection, `SELECT id, name FROM store WHERE franchiseId=?`, [franchise.id]);
       }
@@ -151,20 +138,41 @@ class DB {
   async getUserFranchises(userId) {
     const connection = await this.getConnection();
     let franchiseIds = await this.query(connection, `SELECT objectId FROM userRole WHERE role='franchisee' AND userId=?`, [userId]);
-    franchiseIds = franchiseIds.map((v) => v.objectId);
+    if (franchiseIds.length === 0) {
+      return [];
+    }
 
+    franchiseIds = franchiseIds.map((v) => v.objectId);
     const franchises = await this.query(connection, `SELECT id, name FROM franchise WHERE id in (${franchiseIds.join(',')})`);
     for (const franchise of franchises) {
-      franchise.admins = await this.query(connection, `SELECT u.id FROM userRole AS ur JOIN user AS u ON u.id=ur.userId WHERE ur.objectId=? AND ur.role='franchisee'`, [franchise.id]);
-      franchise.admins = franchise.admins.map((v) => v.id);
-
-      franchise.stores = await this.query(
-        connection,
-        `select s.id, s.name, sum(oi.price) as totalRevenue from dinerOrder as do join orderItem as oi on do.id=oi.orderId right join  store as s on s.id=do.storeId where s.franchiseId=? group by s.id`,
-        [franchise.id]
-      );
+      await this.getFranchise(franchise);
     }
     return franchises;
+  }
+
+  async getFranchise(franchise) {
+    const connection = await this.getConnection();
+
+    franchise.admins = await this.query(connection, `SELECT u.id, u.name, u.email FROM userRole AS ur JOIN user AS u ON u.id=ur.userId WHERE ur.objectId=? AND ur.role='franchisee'`, [franchise.id]);
+
+    franchise.stores = await this.query(
+      connection,
+      `SELECT s.id, s.name, COALESCE(SUM(oi.price), 0) AS totalRevenue FROM dinerOrder AS do JOIN orderItem AS oi ON do.id=oi.orderId RIGHT JOIN store AS s ON s.id=do.storeId WHERE s.franchiseId=? GROUP BY s.id`,
+      [franchise.id]
+    );
+
+    return franchise;
+  }
+
+  async createStore(franchiseId, store) {
+    const connection = await this.getConnection();
+    const insertResult = connection.execute(`INSERT INTO store (franchiseId, name) VALUES (?, ?)`, [franchiseId, store.name]);
+    return { id: insertResult.insertId, franchiseId, name: store.name };
+  }
+
+  async deleteStore(franchiseId, storeId) {
+    const connection = await this.getConnection();
+    await this.query(connection, `DELETE FROM store WHERE franchiseId=? AND id=?`, [franchiseId, storeId]);
   }
 
   getOffset(currentPage = 1, listPerPage) {
