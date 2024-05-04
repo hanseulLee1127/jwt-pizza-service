@@ -121,6 +121,11 @@ class DB {
     }
   }
 
+  async deleteStore(franchiseId, storeId) {
+    const connection = await this.getConnection();
+    await this.query(connection, `DELETE FROM store WHERE franchiseId=? AND id=?`, [franchiseId, storeId]);
+  }
+
   async getFranchises(authUser) {
     const connection = await this.getConnection();
 

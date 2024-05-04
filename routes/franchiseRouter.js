@@ -16,6 +16,13 @@ franchiseRouter.endpoints = [
     example: `curl -b cookies.txt -X POST localhost:3000/api/franchise -H 'Content-Type: application/json' -d '{"franchiseId": 1, "storeId":1, "items":[{ "menuId": 1, "description": "Veggie", "price": 0.05 }]}'`,
   },
   { method: 'DELETE', path: '/api/franchise/:franchiseId', requiresAuth: true, description: `Delete a franchises`, example: `curl -X DELETE -b cookies.txt localhost:3000/api/franchise/1` },
+  {
+    method: 'DELETE',
+    path: '/api/franchise/:franchiseId/store/:storeId',
+    requiresAuth: true,
+    description: `Delete a store`,
+    example: `curl -X DELETE -b cookies.txt localhost:3000/api/franchise/1/store/1`,
+  },
 ];
 
 franchiseRouter.get(
@@ -48,6 +55,19 @@ franchiseRouter.post(
 
     const franchise = req.body;
     res.send(await DB.createFranchise(franchise));
+  })
+);
+
+franchiseRouter.delete(
+  '/:franchiseId/store/:storeId',
+  authRouter.authenticateToken,
+  asyncHandler(async (req, res) => {
+    if (!req.user?.isRole(Role.Admin)) {
+      throw new StatusCodeError('unable to delete a store', 403);
+    }
+
+    await DB.deleteStore(req.params.franchiseId, req.params.storeId);
+    res.json({ message: 'store deleted' });
   })
 );
 
