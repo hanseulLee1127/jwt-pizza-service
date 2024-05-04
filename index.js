@@ -1,7 +1,7 @@
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import { authRouter, setAuthUser } from './routes/authRouter.js';
-import pizzaRouter from './routes/pizzaRouter.js';
+import orderRouter from './routes/orderRouter.js';
 import franchiseRouter from './routes/franchiseRouter.js';
 
 const app = express();
@@ -19,13 +19,13 @@ app.use((req, res, next) => {
 const apiRouter = express.Router();
 app.use('/api', apiRouter);
 apiRouter.use('/auth', authRouter);
-apiRouter.use('/pizza', pizzaRouter);
+apiRouter.use('/order', orderRouter);
 apiRouter.use('/franchise', franchiseRouter);
 
 app.use('*', (_req, res) => {
   res.status(404).send({
     message: 'welcome to JWT Pizza',
-    endpoints: [...authRouter.endpoints, ...pizzaRouter.endpoints],
+    endpoints: [...authRouter.endpoints, ...orderRouter.endpoints],
   });
 });
 
