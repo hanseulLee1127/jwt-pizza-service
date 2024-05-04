@@ -82,7 +82,7 @@ class DB {
       const menuId = await this.getID(connection, 'id', item.menuId, 'menu');
       await this.query(connection, `INSERT INTO orderItem (orderId, menuId, description, price) VALUES (?, ?, ?, ?)`, [orderId, menuId, item.description, item.price]);
     }
-    return { id: orderId, dinerId: user.id, order };
+    return { id: orderId, ...order };
   }
 
   async getFranchises(authUser) {
@@ -148,6 +148,7 @@ class DB {
       user: config.db.connection.user,
       password: config.db.connection.password,
       connectTimeout: config.db.connection.connectTimeout,
+      decimalNumbers: true,
     });
     if (setUse) {
       await connection.query(`USE ${config.db.connection.database}`);
@@ -176,7 +177,7 @@ class DB {
           id INT AUTO_INCREMENT PRIMARY KEY,
           title VARCHAR(255) NOT NULL,
           image VARCHAR(1024) NOT NULL,
-          price DECIMAL(10, 2) NOT NULL,
+          price DECIMAL(10, 8) NOT NULL,
           description TEXT NOT NULL
         )
       `);
@@ -227,7 +228,7 @@ class DB {
           orderId INT NOT NULL,
           menuId INT NOT NULL,
           description VARCHAR(255) NOT NULL,
-          price DECIMAL(10, 2) NOT NULL,
+          price DECIMAL(10, 8) NOT NULL,
           FOREIGN KEY (orderId) REFERENCES dinerOrder(id),
           FOREIGN KEY (menuId) REFERENCES menu(id)
         )
