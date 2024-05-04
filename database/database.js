@@ -91,12 +91,13 @@ class DB {
     const franchises = await this.query(connection, `SELECT id, name FROM franchise`);
     for (const franchise of franchises) {
       if (authUser?.isRole(Role.Admin)) {
-        franchise.admins = await this.query(connection, `SELECT u.id FROM userRole AS ur JOIN user AS u ON u.id=ur.userId WHERE ur.objectId=? AND ur.role='franchisee'`, [franchise.id]);
-        franchise.admins = franchise.admins.map((v) => v.id);
+        franchise.admins = await this.query(connection, `SELECT u.id, u.name, u.email FROM userRole AS ur JOIN user AS u ON u.id=ur.userId WHERE ur.objectId=? AND ur.role='franchisee'`, [
+          franchise.id,
+        ]);
 
         franchise.stores = await this.query(
           connection,
-          `select s.id, s.name, sum(oi.price) as totalRevenue from dinerOrder as do join orderItem as oi on do.id=oi.orderId right join  store as s on s.id=do.storeId where s.franchiseId=? group by s.id`,
+          `SELECT s.id, s.name, COALESCE(SUM(oi.price), 0) AS totalRevenue FROM dinerOrder AS DO JOIN orderItem AS oi ON do.id=oi.orderId RIGHT JOIN store AS s ON s.id=do.storeId WHERE s.franchiseId=? GROUP BY s.id`,
           [franchise.id]
         );
       } else {

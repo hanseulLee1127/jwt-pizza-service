@@ -1,6 +1,6 @@
 import express from 'express';
 import { DB } from '../database/database.js';
-import authRouter from './authRouter.js';
+import { authRouter } from './authRouter.js';
 import { asyncHandler } from '../endpointHelper.js';
 
 const pizzaRouter = express.Router();
