@@ -29,6 +29,7 @@ npm -g install nodemon
 ## Known bugs
 
 1. You can register a user with the same email multiple times
+1. MySQL connections never get closed
 
 ## Known security vulnerabilities
 
@@ -38,3 +39,4 @@ npm -g install nodemon
 1. Reveals config `server: Express`
 1. If you use the same name for creating a franchise it will leak the SQL error
 1. Returns code stack with error
+1. Docs page has the demo data user's email and password
