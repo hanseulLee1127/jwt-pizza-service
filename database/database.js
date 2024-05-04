@@ -127,7 +127,7 @@ class DB {
     const franchises = await this.query(connection, `SELECT id, name FROM franchise`);
     for (const franchise of franchises) {
       if (authUser?.isRole(Role.Admin)) {
-        await this.getFranchise(connection, franchise);
+        await this.getFranchise(franchise);
       } else {
         franchise.stores = await this.query(connection, `SELECT id, name FROM store WHERE franchiseId=?`, [franchise.id]);
       }
@@ -328,7 +328,7 @@ class DB {
             { object: 'PizzaCorp', role: Role.Franchisee },
           ],
         },
-        { name: 'Zara Ahmed', email: 'a@jwt.com', password: 'a', roles: [{ role: Role.Admin }] },
+        { name: '常用名字', email: 'a@jwt.com', password: 'a', roles: [{ role: Role.Admin }] },
         { name: 'Kai Chen', email: 'd@jwt.com', password: 'a', roles: [{ role: Role.Diner }] },
         { name: 'Lila Patel', email: 'lila@jwt.com', password: 'a', roles: [{ role: Role.Diner }] },
         { name: 'Aiden Kim', email: 'aiden@jwt.com', password: 'a', roles: [{ role: Role.Diner }] },
@@ -336,7 +336,7 @@ class DB {
         { name: 'Emilio Costa', email: 'emilio@jwt.com', password: 'a', roles: [{ role: Role.Diner }] },
         { name: 'Amara Ali', email: 'amara@jwt.com', password: 'a', roles: [{ role: Role.Diner }] },
         { name: 'Nikolai Petrov', email: 'nikolai@jwt.com', password: 'a', roles: [{ object: 'LotaPizza', role: Role.Franchisee }] },
-        { name: 'Luna Santos', email: 'luna@jwt.com', password: 'a', roles: [{ object: 'LotaPizza', role: Role.Franchisee }] },
+        { name: 'عبدالله العمري', email: 'luna@jwt.com', password: 'a', roles: [{ object: 'LotaPizza', role: Role.Franchisee }] },
       ];
 
       for (const user of defaultUsers) {
