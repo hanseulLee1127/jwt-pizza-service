@@ -26,9 +26,14 @@ Nodemon is assumed to be installed globally so that you can have hot reloading w
 npm -g install nodemon
 ```
 
+## Known bugs
+
+1. You can register a user with the same email multiple times
+
 ## Known security vulnerabilities
 
 1. Inject on order description
 1. Escalation on add user with a given role
 1. Doesn't delete cookie on logout
 1. Reveals config `server: Express`
+1. If you use the same name for creating a franchise it will leak the SQL error

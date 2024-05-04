@@ -85,6 +85,32 @@ class DB {
     return { id: orderId, ...order };
   }
 
+  async createFranchise(authUser, franchise) {
+    const connection = await this.getConnection();
+
+    if (!authUser?.isRole(Role.Admin)) {
+      throw new StatusCodeError('forbidden from creating a franchise', 403);
+    }
+
+    for (const admin of franchise.admins) {
+      const adminUser = await this.query(connection, `SELECT id, name FROM user WHERE email=?`, [admin.email]);
+      if (adminUser.length == 0) {
+        throw new StatusCodeError(`unknown user for franchise admin ${admin.email} provided`, 404);
+      }
+      admin.id = adminUser[0].id;
+      admin.name = adminUser[0].name;
+    }
+
+    const franchiseResult = await this.query(connection, `INSERT INTO franchise (name) VALUES (?)`, [franchise.name]);
+    franchise.id = franchiseResult.insertId;
+
+    for (const admin of franchise.admins) {
+      await this.query(connection, `INSERT INTO userRole (userId, role, objectId) VALUES (?, ?, ?)`, [admin.id, Role.Franchisee, franchise.id]);
+    }
+
+    return franchise;
+  }
+
   async getFranchises(authUser) {
     const connection = await this.getConnection();
 
@@ -186,7 +212,7 @@ class DB {
       await connection.query(`
         CREATE TABLE IF NOT EXISTS franchise (
           id INT AUTO_INCREMENT PRIMARY KEY,
-          name VARCHAR(255) NOT NULL
+          name VARCHAR(255) NOT NULL UNIQUE
         )
       `);
 
