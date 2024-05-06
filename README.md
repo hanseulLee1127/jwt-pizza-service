@@ -4,6 +4,29 @@ Backend service for making JWT pizzas. This service tracks users and franchises 
 
 JWTs are used for authentication objects.
 
+## Deployment
+
+In order for the server to work correctly it must be configured by providing a `config.js` file.
+
+```js
+export default {
+  jwtSecret: '090fdsfajd09avja90dfsa890fdjsiovioczd',
+  db: {
+    connection: {
+      host: 'localhost',
+      user: 'root',
+      password: '(tacoSeason45',
+      database: 'pizza',
+      connectTimeout: 60000,
+    },
+    listPerPage: 10,
+  },
+  factory: {
+    url: 'http://localhost:3000',
+  },
+};
+```
+
 ## Endpoints
 
 You can get the documentation for all endpoints by making the following request.

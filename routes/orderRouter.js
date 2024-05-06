@@ -1,7 +1,8 @@
 import express from 'express';
+import config from '../config.js';
 import { DB } from '../database/database.js';
 import { authRouter } from './authRouter.js';
-import { asyncHandler } from '../endpointHelper.js';
+import { asyncHandler, StatusCodeError } from '../endpointHelper.js';
 
 const orderRouter = express.Router();
 
@@ -36,8 +37,19 @@ orderRouter.post(
   '/',
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
-    const order = req.body;
-    res.send(await DB.addDinerOrder(req.user, order));
+    const orderReq = req.body;
+    const order = await DB.addDinerOrder(req.user, orderReq);
+    const r = await fetch(`${config.factory.url}/api/order`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', authorization: `Bearer ${config.factory.apiKey}` },
+      body: JSON.stringify({ diner: { id: req.user.id, name: req.user.name, email: req.user.email }, order }),
+    });
+    const j = await r.json();
+    if (r.ok) {
+      res.send({ order, jwt: j.jwt });
+    } else {
+      throw new StatusCodeError(`Failed to fulfill order at factory. ${JSON.stringify(j)}`, 500);
+    }
   })
 );
 
