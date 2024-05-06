@@ -1,5 +1,5 @@
 export default {
-  jwtSecret: ';ljfdsalkfnn;vadijrewfnl;dkasvj;l3242fsd09avjcsalj;fdas',
+  jwtSecret: '090fdsfajd09avja90dfsa890fdjsiovioczd',
   db: {
     connection: {
       host: 'localhost',
@@ -9,5 +9,8 @@ export default {
       connectTimeout: 60000,
     },
     listPerPage: 10,
+  },
+  factory: {
+    url: 'http://localhost:3000',
   },
 };
