@@ -22,10 +22,16 @@ apiRouter.use('/auth', authRouter);
 apiRouter.use('/order', orderRouter);
 apiRouter.use('/franchise', franchiseRouter);
 
-app.use('*', (_req, res) => {
+app.use('docs', (_req, res) => {
   res.json({
     message: 'welcome to JWT Pizza',
     endpoints: [...authRouter.endpoints, ...orderRouter.endpoints, ...franchiseRouter.endpoints],
+  });
+});
+
+app.use('*', (_req, res) => {
+  res.status(404).json({
+    message: 'unknown endpoint',
   });
 });
 
