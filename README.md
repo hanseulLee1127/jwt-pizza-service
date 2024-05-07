@@ -23,6 +23,7 @@ export default {
   },
   factory: {
     url: 'https://jwt-pizza-factory.cs329.click',
+    apiKey: 'a42nkl3fdsfagfdagnvcaklfdsafdsa9',
   },
 };
 ```
@@ -32,7 +33,7 @@ export default {
 You can get the documentation for all endpoints by making the following request.
 
 ```sh
-curl localhost:3000/api
+curl localhost:3000/api/docs
 ```
 
 ## Development notes

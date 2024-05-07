@@ -13,11 +13,12 @@ orderRouter.endpoints = [
     method: 'POST',
     path: '/api/order',
     requiresAuth: true,
-    description: 'Make a order for the authenticated user',
+    description: 'Create a order for the authenticated user',
     example: `curl -b cookies.txt -X POST localhost:3000/api/order -H 'Content-Type: application/json' -d '{"franchiseId": 1, "storeId":1, "items":[{ "menuId": 1, "description": "Veggie", "price": 0.05 }]}'`,
   },
 ];
 
+// getMenu
 orderRouter.get(
   '/menu',
   asyncHandler(async (req, res) => {
@@ -25,6 +26,7 @@ orderRouter.get(
   })
 );
 
+// getOrders
 orderRouter.get(
   '/',
   authRouter.authenticateToken,
@@ -33,6 +35,7 @@ orderRouter.get(
   })
 );
 
+// createOrder
 orderRouter.post(
   '/',
   authRouter.authenticateToken,
