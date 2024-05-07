@@ -22,7 +22,7 @@ export default {
     listPerPage: 10,
   },
   factory: {
-    url: 'http://localhost:3000',
+    url: 'https://jwt-pizza-factory.cs329.click',
   },
 };
 ```
