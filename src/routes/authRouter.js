@@ -1,8 +1,8 @@
-import express from 'express';
-import jwt from 'jsonwebtoken';
-import config from '../config.js';
-import { asyncHandler } from '../endpointHelper.js';
-import { DB, Role } from '../database/database.js';
+const express = require('express');
+const jwt = require('jsonwebtoken');
+const config = require('../config.js');
+const { asyncHandler } = require('../endpointHelper.js');
+const { DB, Role } = require('../database/database.js');
 
 const authRouter = express.Router();
 
@@ -82,4 +82,4 @@ authRouter.delete(
     res.json({ message: 'logout successful' });
   })
 );
-export { authRouter, setAuthUser };
+module.exports = { authRouter, setAuthUser };

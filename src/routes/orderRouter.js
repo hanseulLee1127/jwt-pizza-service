@@ -1,8 +1,8 @@
-import express from 'express';
-import config from '../config.js';
-import { DB } from '../database/database.js';
-import { authRouter } from './authRouter.js';
-import { asyncHandler, StatusCodeError } from '../endpointHelper.js';
+const express = require('express');
+const config = require('../config.js');
+const { DB } = require('../database/database.js');
+const { authRouter } = require('./authRouter.js');
+const { asyncHandler, StatusCodeError } = require('../endpointHelper.js');
 
 const orderRouter = express.Router();
 
@@ -56,4 +56,4 @@ orderRouter.post(
   })
 );
 
-export default orderRouter;
+module.exports = orderRouter;

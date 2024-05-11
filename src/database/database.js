@@ -1,7 +1,7 @@
-import mysql from 'mysql2/promise';
-import bcrypt from 'bcrypt';
-import config from '../config.js';
-import { StatusCodeError } from '../endpointHelper.js';
+const mysql = require('mysql2/promise');
+const bcrypt = require('bcrypt');
+const config = require('../config.js');
+const { StatusCodeError } = require('../endpointHelper.js');
 
 const Role = {
   Diner: 'diner',
@@ -434,4 +434,4 @@ class DB {
 }
 
 const db = new DB();
-export { Role, db as DB };
+module.exports = { Role, DB: db };

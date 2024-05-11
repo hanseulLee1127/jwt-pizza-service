@@ -1,8 +1,8 @@
-import express from 'express';
-import cookieParser from 'cookie-parser';
-import { authRouter, setAuthUser } from './routes/authRouter.js';
-import orderRouter from './routes/orderRouter.js';
-import franchiseRouter from './routes/franchiseRouter.js';
+const express = require('express');
+const cookieParser = require('cookie-parser');
+const { authRouter, setAuthUser } = require('./routes/authRouter.js');
+const orderRouter = require('./routes/orderRouter.js');
+const franchiseRouter = require('./routes/franchiseRouter.js');
 
 const app = express();
 app.use(express.json());
@@ -41,4 +41,4 @@ app.use((err, _req, res, _next) => {
   res.status(err.statusCode ?? 500).json({ message: err.message, stack: err.stack });
 });
 
-export default app;
+module.exports = app;
