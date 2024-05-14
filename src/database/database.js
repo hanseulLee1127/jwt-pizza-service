@@ -7,10 +7,17 @@ const { Role } = require('../model/model.js');
 
 class DB {
   constructor() {
-    (async () => {
+    this.initialized = new Promise(async (resolve) => {
       await this.initializeDatabase();
       await this.initializeData();
-    })();
+      resolve(true);
+      console.log('Database initialized');
+    });
+  }
+
+  async getConnection(setUse = true) {
+    await this.initialized;
+    return this._getConnection(setUse);
   }
 
   async getMenu() {
@@ -191,7 +198,7 @@ class DB {
     throw new Error('No ID found');
   }
 
-  async getConnection(setUse = true) {
+  async _getConnection(setUse = true) {
     const connection = await mysql.createConnection({
       host: config.db.connection.host,
       user: config.db.connection.user,
@@ -206,13 +213,13 @@ class DB {
   }
 
   async initializeData() {
-    const connection = await this.getConnection();
+    const connection = await this._getConnection();
     insertTestData(connection, this);
   }
 
   async initializeDatabase() {
     try {
-      const connection = await this.getConnection(false);
+      const connection = await this._getConnection(false);
 
       await connection.query(`CREATE DATABASE IF NOT EXISTS ${config.db.connection.database}`);
       await connection.query(`USE ${config.db.connection.database}`);
