@@ -11,7 +11,6 @@ class DB {
       await this.initializeDatabase();
       await this.initializeData();
       resolve(true);
-      console.log('Database initialized');
     });
   }
 
