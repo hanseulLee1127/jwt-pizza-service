@@ -10,12 +10,12 @@ In order for the server to work correctly it must be configured by providing a `
 
 ```js
 export default {
-  jwtSecret: '090fdsfajd09avja90dfsa890fdjsiovioczd',
+  jwtSecret: 'your-cryptographically-generated-secret-here',
   db: {
     connection: {
       host: 'localhost',
       user: 'root',
-      password: '(tacoSeason45',
+      password: 'your-secure-database-password-here',
       database: 'pizza',
       connectTimeout: 60000,
     },
@@ -23,7 +23,7 @@ export default {
   },
   factory: {
     url: 'https://jwt-pizza-factory.cs329.click',
-    apiKey: 'a42nkl3fdsfagfdagnvcaklfdsafdsa9',
+    apiKey: 'your-factory-issued-api-key-here',
   },
 };
 ```
