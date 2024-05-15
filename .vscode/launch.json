@@ -2,6 +2,14 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Init",
+      "program": "${workspaceFolder}/src/init.js",
+      "request": "launch",
+      "args": ["joe", "joe@cow.com", "a"],
+      "skipFiles": ["<node_internals>/**"],
+      "type": "node"
+    },
+    {
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
       "name": "nodemon",
@@ -10,7 +18,7 @@
       "restart": true,
       "runtimeExecutable": "nodemon",
       "args": ["3000"],
-      "cwd": "${workspaceFolder}/src",      
+      "cwd": "${workspaceFolder}/src",
       "skipFiles": ["<node_internals>/**"],
       "type": "node"
     }
