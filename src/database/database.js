@@ -1,17 +1,12 @@
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcrypt');
 const config = require('../config.js');
-const insertTestData = require('./testData.js');
 const { StatusCodeError } = require('../endpointHelper.js');
 const { Role } = require('../model/model.js');
 
 class DB {
   constructor() {
-    this.initialized = new Promise(async (resolve) => {
-      await this.initializeDatabase();
-      await this.initializeData();
-      resolve(true);
-    });
+    this.initialized = this.initializeDatabase();
   }
 
   async getConnection(setUse = true) {
@@ -120,7 +115,7 @@ class DB {
       await this.query(connection, `DELETE FROM userRole WHERE objectId=?`, [franchiseId]);
       await this.query(connection, `DELETE FROM franchise WHERE id=?`, [franchiseId]);
       await connection.commit();
-    } catch (error) {
+    } catch {
       await connection.rollback();
       throw new StatusCodeError('unable to delete franchise', 500);
     }
@@ -209,11 +204,6 @@ class DB {
       await connection.query(`USE ${config.db.connection.database}`);
     }
     return connection;
-  }
-
-  async initializeData() {
-    const connection = await this._getConnection();
-    insertTestData(connection, this);
   }
 
   async initializeDatabase() {
