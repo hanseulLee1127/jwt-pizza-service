@@ -1,6 +1,6 @@
 const express = require('express');
 const config = require('../config.js');
-const { DB } = require('../database/database.js');
+const { Role, DB } = require('../database/database.js');
 const { authRouter } = require('./authRouter.js');
 const { asyncHandler, StatusCodeError } = require('../endpointHelper.js');
 
@@ -8,6 +8,13 @@ const orderRouter = express.Router();
 
 orderRouter.endpoints = [
   { method: 'GET', path: '/api/order/menu', description: 'Get the pizza menu', example: `curl localhost:3000/order/menu` },
+  {
+    method: 'PUT',
+    path: '/api/order/menu',
+    requiresAuth: true,
+    description: 'Add an item to the menu',
+    example: `curl -b cookies.txt -X PUT localhost:3000/api/menu -H 'Content-Type: application/json' -d '{ "title":"Student", "description": "No topping, no sauce, just carbs", "image":"pizza9.png", "price": 0.0001 }'`,
+  },
   { method: 'GET', path: '/api/order', requiresAuth: true, description: 'Get the orders for the authenticated user', example: `curl -b cookies.txt -X GET localhost:3000/api/order` },
   {
     method: 'POST',
@@ -22,6 +29,21 @@ orderRouter.endpoints = [
 orderRouter.get(
   '/menu',
   asyncHandler(async (req, res) => {
+    res.send(await DB.getMenu());
+  })
+);
+
+// addMenuItem
+orderRouter.put(
+  '/menu',
+  authRouter.authenticateToken,
+  asyncHandler(async (req, res) => {
+    if (!req.user.isRole(Role.Admin)) {
+      throw new StatusCodeError('unable to add menu item', 403);
+    }
+
+    const addMenuItemReq = req.body;
+    await DB.addMenuItem(addMenuItemReq);
     res.send(await DB.getMenu());
   })
 );

@@ -21,6 +21,13 @@ class DB {
     return rows;
   }
 
+  async addMenuItem(item) {
+    const connection = await this.getConnection();
+
+    const addResult = await this.query(connection, `INSERT INTO menu (title, description, image, price) VALUES (?, ?, ?, ?)`, [item.title, item.description, item.image, item.price]);
+    return { ...item, id: addResult.insertId };
+  }
+
   async addUser(user) {
     const connection = await this.getConnection();
 
@@ -82,7 +89,7 @@ class DB {
       const menuId = await this.getID(connection, 'id', item.menuId, 'menu');
       await this.query(connection, `INSERT INTO orderItem (orderId, menuId, description, price) VALUES (?, ?, ?, ?)`, [orderId, menuId, item.description, item.price]);
     }
-    return { id: orderId, ...order };
+    return { ...order, id: orderId };
   }
 
   async createFranchise(franchise) {

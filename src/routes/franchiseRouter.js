@@ -32,6 +32,7 @@ franchiseRouter.endpoints = [
   },
 ];
 
+// getFranchises
 franchiseRouter.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -39,6 +40,7 @@ franchiseRouter.get(
   })
 );
 
+// getUserFranchises
 franchiseRouter.get(
   '/:userId',
   authRouter.authenticateToken,
@@ -53,6 +55,7 @@ franchiseRouter.get(
   })
 );
 
+// createFranchise
 franchiseRouter.post(
   '/',
   authRouter.authenticateToken,
@@ -66,6 +69,7 @@ franchiseRouter.post(
   })
 );
 
+// deleteFranchise
 franchiseRouter.delete(
   '/:franchiseId',
   authRouter.authenticateToken,
@@ -80,6 +84,7 @@ franchiseRouter.delete(
   })
 );
 
+// createStore
 franchiseRouter.post(
   '/:franchiseId/store',
   authRouter.authenticateToken,
@@ -94,6 +99,7 @@ franchiseRouter.post(
   })
 );
 
+// deleteStore
 franchiseRouter.delete(
   '/:franchiseId/store/:storeId',
   authRouter.authenticateToken,
