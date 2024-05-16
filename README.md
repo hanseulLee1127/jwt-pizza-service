@@ -1,6 +1,6 @@
 # jwt-pizza-service
 
-Coverage: 0.0
+![Coverage badge](coverageBadge.svg)
 
 Backend service for making JWT pizzas. This service tracks users and franchises and orders pizzas. All order requests are passed to the JWT Pizza Factory where the pizzas are made.
 
