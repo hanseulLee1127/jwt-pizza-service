@@ -29,7 +29,7 @@ authRouter.endpoints = [
 
 function setAuth(user, res) {
   const token = jwt.sign(user, config.jwtSecret);
-  res.cookie('token', token, { secure: true, httpOnly: true, sameSite: 'strict' });
+  res.cookie('token', token, { secure: true, httpOnly: true, sameSite: 'None' });
 }
 
 function setAuthUser(req, res, next) {
