@@ -3,6 +3,7 @@ const cookieParser = require('cookie-parser');
 const { authRouter, setAuthUser } = require('./routes/authRouter.js');
 const orderRouter = require('./routes/orderRouter.js');
 const franchiseRouter = require('./routes/franchiseRouter.js');
+const version = require('./version.json');
 
 const app = express();
 app.use(express.json());
@@ -25,6 +26,7 @@ apiRouter.use('/franchise', franchiseRouter);
 apiRouter.use('/docs', (req, res) => {
   res.json({
     message: 'welcome to JWT Pizza',
+    version: version.version,
     endpoints: [...authRouter.endpoints, ...orderRouter.endpoints, ...franchiseRouter.endpoints],
   });
 });
