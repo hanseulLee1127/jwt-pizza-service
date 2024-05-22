@@ -31,6 +31,13 @@ apiRouter.use('/docs', (req, res) => {
   });
 });
 
+app.use('/', (req, res) => {
+  res.json({
+    message: 'welcome to JWT Pizza',
+    version: version.version,
+  });
+});
+
 app.use('*', (req, res) => {
   res.status(404).json({
     message: 'unknown endpoint',
