@@ -290,7 +290,7 @@ class DB {
         connection.end();
       }
     } catch (err) {
-      console.error('Error initializing database:', err.message, err.stack);
+      console.error(JSON.stringify({ message: 'Error initializing database', exception: err.message, connection: config.db.connection }));
     }
   }
 
