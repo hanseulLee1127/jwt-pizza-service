@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt');
 const config = require('../config.js');
 const { StatusCodeError } = require('../endpointHelper.js');
 const { Role } = require('../model/model.js');
-
+const dbModel = require('./dbModel.js');
 class DB {
   constructor() {
     this.initialized = this.initializeDatabase();
@@ -64,12 +64,23 @@ class DB {
         throw new StatusCodeError('unknown user', 404);
       }
 
-      const roleResult = await this.query(connection, `SELECT * FROM userRole where userId=?`, [user.id]);
+      const roleResult = await this.query(connection, `SELECT * FROM userRole WHERE userId=?`, [user.id]);
       const roles = roleResult.map((r) => {
         return { objectId: r.objectId || undefined, role: r.role };
       });
 
       return { ...user, roles: roles, password: undefined };
+    } finally {
+      connection.end();
+    }
+  }
+
+  async updateUser(userId, email, password) {
+    const connection = await this.getConnection();
+    try {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      await this.query(connection, `UPDATE user SET email=?, password=? WHERE id=?`, [email, hashedPassword, userId]);
+      return this.getUser(email, password);
     } finally {
       connection.end();
     }
@@ -261,85 +272,31 @@ class DB {
     try {
       const connection = await this._getConnection(false);
       try {
+        const dbExists = await this.checkDatabaseExists(connection);
+        console.log(dbExists ? 'Database exists' : 'Database does not exist');
+
         await connection.query(`CREATE DATABASE IF NOT EXISTS ${config.db.connection.database}`);
         await connection.query(`USE ${config.db.connection.database}`);
 
-        await connection.query(`
-        CREATE TABLE IF NOT EXISTS user (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          name VARCHAR(255) NOT NULL,
-          email VARCHAR(255) NOT NULL,
-          password VARCHAR(255) NOT NULL
-        )
-      `);
+        for (const statement of dbModel.tableCreateStatements) {
+          await connection.query(statement);
+        }
 
-        await connection.query(`
-        CREATE TABLE IF NOT EXISTS menu (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          title VARCHAR(255) NOT NULL,
-          image VARCHAR(1024) NOT NULL,
-          price DECIMAL(10, 8) NOT NULL,
-          description TEXT NOT NULL
-        )
-      `);
-
-        await connection.query(`
-        CREATE TABLE IF NOT EXISTS franchise (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          name VARCHAR(255) NOT NULL UNIQUE
-        )
-      `);
-
-        await connection.query(`
-        CREATE TABLE IF NOT EXISTS store (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          franchiseId INT NOT NULL,
-          name VARCHAR(255) NOT NULL,
-          FOREIGN KEY (franchiseId) REFERENCES franchise(id)
-        )
-      `);
-
-        await connection.query(`
-        CREATE TABLE IF NOT EXISTS userRole (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          userId INT NOT NULL,
-          role VARCHAR(255) NOT NULL,
-          objectId INT NOT NULL,
-          FOREIGN KEY (userId) REFERENCES user(id),
-          INDEX (objectId)
-        )
-      `);
-
-        await connection.query(`
-        CREATE TABLE IF NOT EXISTS dinerOrder (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          dinerId INT NOT NULL,
-          franchiseId INT NOT NULL,
-          storeId INT NOT NULL,
-          date DATETIME NOT NULL,
-          INDEX (dinerId),
-          INDEX (franchiseId),
-          INDEX (storeId)
-        )
-      `);
-
-        await connection.query(`
-        CREATE TABLE IF NOT EXISTS orderItem (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          orderId INT NOT NULL,
-          menuId INT NOT NULL,
-          description VARCHAR(255) NOT NULL,
-          price DECIMAL(10, 8) NOT NULL,
-          FOREIGN KEY (orderId) REFERENCES dinerOrder(id),
-          INDEX (menuId)
-        )
-      `);
+        if (!dbExists) {
+          const defaultAdmin = { name: '常用名字', email: 'a@jwt.com', password: 'admin', roles: [{ role: Role.Admin }] };
+          this.addUser(defaultAdmin);
+        }
       } finally {
         connection.end();
       }
     } catch (err) {
       console.error('Error initializing database:', err.message, err.stack);
     }
+  }
+
+  async checkDatabaseExists(connection) {
+    const [rows] = await connection.execute(`SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?`, [config.db.connection.database]);
+    return rows.length > 0;
   }
 }
 
