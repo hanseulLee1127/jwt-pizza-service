@@ -13,7 +13,7 @@ franchiseRouter.endpoints = [
     path: '/api/franchise',
     requiresAuth: true,
     description: 'Create a new franchise',
-    example: `curl -b cookies.txt -X POST localhost:3000/api/franchise -H 'Content-Type: application/json' -d '{"name": "pizzaPocket", "admins": [{"email": "f@jwt.com"}]'`,
+    example: `curl -b cookies.txt -X POST localhost:3000/api/franchise -H 'Content-Type: application/json' -d '{"name": "pizzaPocket", "admins": [{"email": "f@jwt.com"}]}'`,
   },
   { method: 'DELETE', path: '/api/franchise/:franchiseId', requiresAuth: true, description: `Delete a franchises`, example: `curl -X DELETE -b cookies.txt localhost:3000/api/franchise/1` },
   {

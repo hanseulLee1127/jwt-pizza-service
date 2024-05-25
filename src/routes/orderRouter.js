@@ -13,7 +13,7 @@ orderRouter.endpoints = [
     path: '/api/order/menu',
     requiresAuth: true,
     description: 'Add an item to the menu',
-    example: `curl -b cookies.txt -X PUT localhost:3000/api/menu -H 'Content-Type: application/json' -d '{ "title":"Student", "description": "No topping, no sauce, just carbs", "image":"pizza9.png", "price": 0.0001 }'`,
+    example: `curl -b cookies.txt -X PUT localhost:3000/api/order/menu -H 'Content-Type: application/json' -d '{ "title":"Student", "description": "No topping, no sauce, just carbs", "image":"pizza9.png", "price": 0.0001 }'`,
   },
   { method: 'GET', path: '/api/order', requiresAuth: true, description: 'Get the orders for the authenticated user', example: `curl -b cookies.txt -X GET localhost:3000/api/order` },
   {

@@ -11,7 +11,7 @@ authRouter.endpoints = [
     method: 'POST',
     path: '/api/auth',
     description: 'Register a new user',
-    example: `curl -X POST -c cookies.txt localhost:3000/api/auth -d '{"name":"pizza diner", "email":"d@jwt.com", "password":"dinner"}' -H 'Content-Type: application/json'`,
+    example: `curl -X POST -c cookies.txt localhost:3000/api/auth -d '{"name":"pizza diner", "email":"d@jwt.com", "password":"diner"}' -H 'Content-Type: application/json'`,
   },
   {
     method: 'PUT',
