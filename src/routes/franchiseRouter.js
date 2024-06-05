@@ -6,29 +6,52 @@ const { StatusCodeError, asyncHandler } = require('../endpointHelper.js');
 const franchiseRouter = express.Router();
 
 franchiseRouter.endpoints = [
-  { method: 'GET', path: '/api/franchise', description: 'List all the franchises', example: `curl -b cookies.txt localhost:3000/api/franchise` },
-  { method: 'GET', path: '/api/franchise/:userId', requiresAuth: true, description: `List a user's franchises`, example: `curl -b cookies.txt localhost:3000/api/franchise/1` },
+  {
+    method: 'GET',
+    path: '/api/franchise',
+    description: 'List all the franchises',
+    example: `curl localhost:3000/api/franchise`,
+    response: [{ id: 1, name: 'pizzaPocket', stores: [{ id: 1, name: 'SLC' }] }],
+  },
+  {
+    method: 'GET',
+    path: '/api/franchise/:userId',
+    requiresAuth: true,
+    description: `List a user's franchises`,
+    example: `curl localhost:3000/api/franchise/4  -H 'Authorization: Bearer tttttt'`,
+    response: [{ id: 2, name: 'pizzaPocket', admins: [{ id: 4, name: 'pizza franchisee', email: 'f@jwt.com' }], stores: [{ id: 4, name: 'SLC', totalRevenue: 0 }] }],
+  },
   {
     method: 'POST',
     path: '/api/franchise',
     requiresAuth: true,
     description: 'Create a new franchise',
-    example: `curl -b cookies.txt -X POST localhost:3000/api/franchise -H 'Content-Type: application/json' -d '{"name": "pizzaPocket", "admins": [{"email": "f@jwt.com"}]}'`,
+    example: `curl -X POST localhost:3000/api/franchise -H 'Content-Type: application/json' -H 'Authorization: Bearer tttttt' -d '{"name": "pizzaPocket", "admins": [{"email": "f@jwt.com"}]}'`,
+    response: { name: 'pizzaPocket', admins: [{ email: 'f@jwt.com', id: 4, name: 'pizza franchisee' }], id: 1 },
   },
-  { method: 'DELETE', path: '/api/franchise/:franchiseId', requiresAuth: true, description: `Delete a franchises`, example: `curl -X DELETE -b cookies.txt localhost:3000/api/franchise/1` },
+  {
+    method: 'DELETE',
+    path: '/api/franchise/:franchiseId',
+    requiresAuth: true,
+    description: `Delete a franchises`,
+    example: `curl -X DELETE localhost:3000/api/franchise/1 -H 'Authorization: Bearer tttttt'`,
+    response: { message: 'franchise deleted' },
+  },
   {
     method: 'POST',
     path: '/api/franchise/:franchiseId/store',
     requiresAuth: true,
     description: 'Create a new franchise store',
-    example: `curl -b cookies.txt -X POST localhost:3000/api/franchise/1/store -H 'Content-Type: application/json' -d '{"franchiseId": 1, "name":"SLC"}'`,
+    example: `curl -X POST localhost:3000/api/franchise/1/store -H 'Content-Type: application/json' -d '{"franchiseId": 1, "name":"SLC"}' -H 'Authorization: Bearer tttttt'`,
+    response: { id: 1, franchiseId: 1, name: 'SLC' },
   },
   {
     method: 'DELETE',
     path: '/api/franchise/:franchiseId/store/:storeId',
     requiresAuth: true,
     description: `Delete a store`,
-    example: `curl -X DELETE -b cookies.txt localhost:3000/api/franchise/1/store/1`,
+    example: `curl -X DELETE localhost:3000/api/franchise/1/store/1  -H 'Authorization: Bearer tttttt'`,
+    response: { message: 'store deleted' },
   },
 ];
 

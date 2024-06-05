@@ -58,7 +58,7 @@ class DB {
   async getUser(email, password) {
     const connection = await this.getConnection();
     try {
-      const userResult = await this.query(connection, `SELECT * FROM user where email=?`, [email]);
+      const userResult = await this.query(connection, `SELECT * FROM user WHERE email=?`, [email]);
       const user = userResult[0];
       if (!user || !(await bcrypt.compare(password, user.password))) {
         throw new StatusCodeError('unknown user', 404);
@@ -81,6 +81,37 @@ class DB {
       const hashedPassword = await bcrypt.hash(password, 10);
       await this.query(connection, `UPDATE user SET email=?, password=? WHERE id=?`, [email, hashedPassword, userId]);
       return this.getUser(email, password);
+    } finally {
+      connection.end();
+    }
+  }
+
+  async loginUser(userId, token) {
+    token = this.getTokenSignature(token);
+    const connection = await this.getConnection();
+    try {
+      await this.query(connection, `INSERT INTO auth (token, userId) VALUES (?, ?)`, [token, userId]);
+    } finally {
+      connection.end();
+    }
+  }
+
+  async isLoggedIn(token) {
+    token = this.getTokenSignature(token);
+    const connection = await this.getConnection();
+    try {
+      const authResult = await this.query(connection, `SELECT userId FROM auth WHERE token=?`, [token]);
+      return authResult.length > 0;
+    } finally {
+      connection.end();
+    }
+  }
+
+  async logoutUser(token) {
+    token = this.getTokenSignature(token);
+    const connection = await this.getConnection();
+    try {
+      await this.query(connection, `DELETE FROM auth WHERE token=?`, [token]);
     } finally {
       connection.end();
     }
@@ -233,6 +264,14 @@ class DB {
 
   getOffset(currentPage = 1, listPerPage) {
     return (currentPage - 1) * [listPerPage];
+  }
+
+  getTokenSignature(token) {
+    const parts = token.split('.');
+    if (parts.length > 2) {
+      return parts[2];
+    }
+    return '';
   }
 
   async query(connection, sql, params) {

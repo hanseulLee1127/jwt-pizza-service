@@ -11,42 +11,46 @@ authRouter.endpoints = [
     method: 'POST',
     path: '/api/auth',
     description: 'Register a new user',
-    example: `curl -X POST -c cookies.txt localhost:3000/api/auth -d '{"name":"pizza diner", "email":"d@jwt.com", "password":"diner"}' -H 'Content-Type: application/json'`,
+    example: `curl -X POST localhost:3000/api/auth -d '{"name":"pizza diner", "email":"d@jwt.com", "password":"diner"}' -H 'Content-Type: application/json'`,
+    response: { user: { id: 2, name: 'pizza diner', email: 'd@jwt.com', roles: [{ role: 'diner' }] }, token: 'tttttt' },
   },
   {
     method: 'PUT',
     path: '/api/auth',
     description: 'Login existing user',
-    example: `curl -X PUT -c cookies.txt localhost:3000/api/auth -d '{"email":"a@jwt.com", "password":"admin"}' -H 'Content-Type: application/json'`,
+    example: `curl -X PUT localhost:3000/api/auth -d '{"email":"a@jwt.com", "password":"admin"}' -H 'Content-Type: application/json'`,
+    response: { user: { id: 1, name: '常用名字', email: 'a@jwt.com', roles: [{ role: 'admin' }] }, token: 'tttttt' },
   },
   {
     method: 'PUT',
     path: '/api/auth/:userId',
     requiresAuth: true,
     description: 'Update user',
-    example: `curl -X PUT -b cookies.txt localhost:3000/api/auth/1 -d '{"email":"a@jwt.com", "password":"admin"}' -H 'Content-Type: application/json'`,
+    example: `curl -X PUT localhost:3000/api/auth/1 -d '{"email":"a@jwt.com", "password":"admin"}' -H 'Content-Type: application/json' -H 'Authorization: Bearer tttttt'`,
+    response: { id: 1, name: '常用名字', email: 'a@jwt.com', roles: [{ role: 'admin' }] },
   },
   {
     method: 'DELETE',
     path: '/api/auth',
     requiresAuth: true,
     description: 'Logout a user',
-    example: `curl -X DELETE -c cookies.txt localhost:3000/api/auth`,
+    example: `curl -X DELETE localhost:3000/api/auth -H 'Authorization: Bearer tttttt'`,
+    response: { message: 'logout successful' },
   },
 ];
 
-function setAuthUser(req, res, next) {
-  if (!req.cookies.token) {
-    next();
-  } else {
-    jwt.verify(req.cookies.token, config.jwtSecret, (err, user) => {
-      if (!err) {
-        user.isRole = (role) => !!user.roles.find((r) => r.role === role);
-        req.user = user;
+async function setAuthUser(req, res, next) {
+  const token = readAuthToken(req);
+  if (token) {
+    try {
+      if (await DB.isLoggedIn(token)) {
+        // Check the database to make sure the token is valid.
+        req.user = jwt.verify(token, config.jwtSecret);
+        req.user.isRole = (role) => !!req.user.roles.find((r) => r.role === role);
       }
-      next();
-    });
+    } catch {}
   }
+  next();
 }
 
 // Authenticate token
@@ -66,8 +70,8 @@ authRouter.post(
       return res.status(400).json({ message: 'name, email, and password are required' });
     }
     const user = await DB.addUser({ name, email, password, roles: [{ role: Role.Diner }] });
-    setAuth(user, res);
-    res.json(user);
+    const auth = await setAuth(user);
+    res.json({ user: user, token: auth });
   })
 );
 
@@ -77,8 +81,8 @@ authRouter.put(
   asyncHandler(async (req, res) => {
     const { email, password } = req.body;
     const user = await DB.getUser(email, password);
-    setAuth(user, res);
-    res.json(user);
+    const auth = await setAuth(user);
+    res.json({ user: user, token: auth });
   })
 );
 
@@ -86,8 +90,8 @@ authRouter.put(
 authRouter.delete(
   '/',
   authRouter.authenticateToken,
-  asyncHandler(async (_, res) => {
-    res.clearCookie('token');
+  asyncHandler(async (req, res) => {
+    clearAuth(req);
     res.json({ message: 'logout successful' });
   })
 );
@@ -109,9 +113,25 @@ authRouter.put(
   })
 );
 
-function setAuth(user, res) {
+async function setAuth(user) {
   const token = jwt.sign(user, config.jwtSecret);
-  res.cookie('token', token, { secure: true, httpOnly: true, sameSite: 'None' });
+  await DB.loginUser(user.id, token);
+  return token;
+}
+
+async function clearAuth(req) {
+  const token = readAuthToken(req);
+  if (token) {
+    await DB.logoutUser(token);
+  }
+}
+
+function readAuthToken(req) {
+  const authHeader = req.headers.authorization;
+  if (authHeader) {
+    return authHeader.split(' ')[1];
+  }
+  return null;
 }
 
 module.exports = { authRouter, setAuthUser };

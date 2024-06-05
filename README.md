@@ -43,7 +43,7 @@ curl localhost:3000/api/docs
 Install the required packages.
 
 ```sh
-npm install express cookie-parser jsonwebtoken mysql2 bcrypt
+npm install express jsonwebtoken mysql2 bcrypt
 ```
 
 Nodemon is assumed to be installed globally so that you can have hot reloading when debugging.
