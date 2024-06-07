@@ -86,9 +86,9 @@ orderRouter.post(
     });
     const j = await r.json();
     if (r.ok) {
-      res.send({ order, jwt: j.jwt });
+      res.send({ order, jwt: j.jwt, reportUrl: j.reportUrl });
     } else {
-      throw new StatusCodeError(`Failed to fulfill order at factory. ${JSON.stringify(j)}`, 500);
+      res.status(500).send({ message: 'Failed to fulfill order at factory', reportUrl: j.reportUrl });
     }
   })
 );
