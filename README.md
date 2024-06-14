@@ -1,4 +1,4 @@
-# jwt-pizza-service
+# 🍕 jwt-pizza-service
 
 ![Coverage badge](coverageBadge.svg)
 
