@@ -16,7 +16,8 @@ test("login", async () => {
       /^[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*\.[a-zA-Z0-9\-_]*$/
     );
   
-    const { password: _, ...user } = { ...testUser, roles: [{ role: "diner" }] };
+    const { password, ...user } = { ...testUser, roles: [{ role: "diner" }] };
+    void password;
     expect(loginRes.body.user).toMatchObject(user);
   });
   
