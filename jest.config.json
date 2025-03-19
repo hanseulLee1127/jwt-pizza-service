@@ -1,10 +1,11 @@
 {
-    "collectCoverage": true,
-    "coverageReporters": ["json-summary", "text"],
-    "coverageThreshold": {
-      "global": {
-        "lines": 80
-      }
-    },
-    "testMatch": ["**/__tests__/**/*.js?(x)", "**/?(*.)+(spec|test).js?(x)"]
-  }
+  "collectCoverage": true,
+  "coverageDirectory": "coverage",
+  "coverageReporters": ["json", "json-summary", "text"],
+  "coverageThreshold": {
+    "global": {
+      "lines": 80
+    }
+  },
+  "testPathIgnorePatterns": ["<rootDir>/dist/"]
+}
