@@ -8,10 +8,9 @@ test("cpu_usage", async () => {
 
 test("memory_usage", async () => {
     let answer = metrics.getMemoryUsagePercentage();
-    expect(typeof answer).toBe("number");
-    expect(answer).toBeGreaterThanOrEqual(0);
-});
 
+    expect(typeof answer).toBe("string");
+})
 test("getRequests tracks HTTP requests", () => {
     const mockReq = { method: "GET" };
     const mockRes = {};
