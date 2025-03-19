@@ -1,0 +1,7 @@
+{
+  "metrics": {
+      "source": "jwt-pizza-service-dev",
+      "url": "https://otlp-gateway-prod-us-east-2.grafana.net/otlp/v1/metrics",
+      "apiKey": "1203970:glc_eyJvIjoiMTM4MDA1MSIsIm4iOiJzdGFjay0xMjAzOTcwLWludGVncmF0aW9uLWp3dC1waXp6YS1tZXRyaWNzIiwiayI6IjYxMjhUMDVFeUp3b2VVR0oxOXU5M2NybSIsIm0iOnsiciI6InByb2QtdXMtZWFzdC0wIn19"
+  }
+}
