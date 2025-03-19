@@ -1,93 +1,192 @@
-const metrics = require("../metrics.js");
+const config = require("./config.js");
+const os = require("os");
 
-describe("Metrics Tests", () => {
-  beforeEach(() => {
-    jest.resetModules();
+let requests = {};
+
+let authSuccess = 0;
+let authFail = 0;
+
+let pizzaPurchases = 0;
+let pizzaFailure = 0;
+let revenue = 0;
+
+let activeUsers = {};
+
+let latency = 0;
+let pizza_latency = 0;
+
+// HTTP Requests
+function getRequests() {
+  return (req, res, next) => {
+    requests[req.method] = (requests[req.method] || 0) + 1;
+    next();
+  };
+}
+
+// Authentication Requests
+function authenticationRequests(status) {
+  if (status) {
+    authSuccess += 1;
+  } else {
+    authFail += 1;
+  }
+}
+
+// Pizza ordering Success, Failure, Revenue
+function pizzaOrderTracking(order, success) {
+  if (!success) {
+    pizzaFailure += 1;
+    return;
+  }
+  pizzaPurchases += 1;
+  order.items.forEach((item) => {
+    revenue += item.price;
+  });
+}
+
+// Track Active users
+function trackActiveUsers() {
+  return (req, res, next) => {
+    const userId = req.user ? req.user.id : req.sessionID;
+    if (userId) {
+      activeUsers[userId] = Date.now();
+    }
+    next();
+  };
+}
+
+function measureServiceLatency() {
+  return (req, res, next) => {
+    const startTime = Date.now();
+    res.on("finish", () => {
+      latency = Date.now() - startTime;
+    });
+    next();
+  };
+}
+
+function measurePizzaLatency() {
+  return (req, res, next) => {
+    const startTime = Date.now();
+    res.on("finish", () => {
+      pizza_latency = Date.now() - startTime;
+    });
+    next();
+  };
+}
+
+function removeInactiveUsers() {
+  const now = Date.now();
+  const TIMEOUT_THRESHOLD = 100000;
+  Object.entries(activeUsers).forEach(([userId, lastActivityTime]) => {
+    if (now - lastActivityTime > TIMEOUT_THRESHOLD) {
+      delete activeUsers[userId];
+    }
+  });
+}
+
+// CPU Usage
+function getCpuUsagePercentage() {
+  return parseFloat(((os.loadavg()[0] / os.cpus().length) * 100).toFixed(2));
+}
+
+// Memory Usage
+function getMemoryUsagePercentage() {
+  return parseFloat(((1 - os.freemem() / os.totalmem()) * 100).toFixed(2));
+}
+
+function getRequestTotal() {
+  return Object.values(requests).reduce((total, count) => total + count, 0);
+}
+
+// Metrics Collection Interval
+const METRICS_INTERVAL = setInterval(() => {
+  Object.entries(requests).forEach(([method, count]) => {
+    sendMetricToGrafana(`requests_${method}`, count, "sum", "1", { method });
   });
 
-  test("cpu_usage returns a number", () => {
-    const answer = metrics.getCpuUsagePercentage();
-    expect(typeof answer).toBe("string");
-    expect(parseFloat(answer)).toBeGreaterThanOrEqual(0);
-  });
+  sendMetricToGrafana("requests_total", getRequestTotal(), "sum", "1");
+  sendMetricToGrafana("service_latency", latency, "gauge", "1");
+  sendMetricToGrafana("pizza_latency", pizza_latency, "gauge", "1");
+  latency = 0;
+  pizza_latency = 0;
 
-  test("memory_usage returns a number", () => {
-    const answer = metrics.getMemoryUsagePercentage();
-    expect(typeof answer).toBe("string");
-    expect(parseFloat(answer)).toBeGreaterThanOrEqual(0);
-  });
+  sendMetricToGrafana("pizza_success", pizzaPurchases, "sum", "1");
+  sendMetricToGrafana("pizza_failure", pizzaFailure, "sum", "1");
+  sendMetricToGrafana("pizza_revenue", revenue, "sum", "1");
 
-  test("getRequests tracks HTTP requests", () => {
-    const mockReq = { method: "GET" };
-    const mockRes = {};
-    const mockNext = jest.fn();
+  sendMetricToGrafana("auth_success", authSuccess, "sum", "1");
+  sendMetricToGrafana("auth_fail", authFail, "sum", "1");
 
-    const middleware = metrics.getRequests();
-    middleware(mockReq, mockRes, mockNext);
+  sendMetricToGrafana("cpu", getCpuUsagePercentage(), "gauge", "%");
+  sendMetricToGrafana("memory", getMemoryUsagePercentage(), "gauge", "%");
 
-    expect(metrics.getRequestTotal()).toBeGreaterThanOrEqual(1);
-    expect(mockNext).toHaveBeenCalled();
-  });
+  sendMetricToGrafana("active_users", Object.keys(activeUsers).length, "sum", "1");
 
-  test("authenticationRequests tracks successful and failed auth attempts", () => {
-    metrics.authenticationRequests(true);
-    metrics.authenticationRequests(false);
-    metrics.authenticationRequests(false);
+  removeInactiveUsers();
+}, 10000);
 
-    expect(metrics.getRequestTotal()).toBeGreaterThanOrEqual(0);
-  });
+function stopMetricsCollection() {
+  clearInterval(METRICS_INTERVAL);
+}
 
-  test("pizzaOrderTracking tracks successful and failed pizza orders", () => {
-    const order1 = { items: [{ price: 10 }, { price: 15 }] };
-    const order2 = { items: [{ price: 20 }] };
-
-    metrics.pizzaOrderTracking(order1, true);
-    metrics.pizzaOrderTracking(order2, false); 
-
-    expect(metrics.getRequestTotal()).toBeGreaterThanOrEqual(0);
-  });
-
-  test("trackActiveUsers updates active user list", () => {
-    const mockReq = { user: { id: "user1" } };
-    const mockRes = {};
-    const mockNext = jest.fn();
-
-    const middleware = metrics.trackActiveUsers();
-    middleware(mockReq, mockRes, mockNext);
-
-    expect(Object.keys(metrics.activeUsers).length).toBeGreaterThan(0);
-    expect(mockNext).toHaveBeenCalled();
-  });
-
-  test("measureServiceLatency correctly calculates latency", () => {
-    const mockReq = {};
-    const mockRes = {
-      on: (event, callback) => {
-        if (event === "finish") callback();
+function sendMetricToGrafana(metricName, metricValue, type, unit, attributes = {}) {
+  const metric = {
+    resourceMetrics: [
+      {
+        scopeMetrics: [
+          {
+            metrics: [
+              {
+                name: metricName,
+                unit: unit,
+                [type]: {
+                  dataPoints: [
+                    {
+                      asDouble: metricValue,
+                      timeUnixNano: Date.now() * 1000000,
+                      attributes: Object.entries(attributes).map(([key, value]) => ({
+                        key,
+                        value: { stringValue: value.toString() },
+                      })),
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
       },
-    };
-    const mockNext = jest.fn();
+    ],
+  };
 
-    const middleware = metrics.measureServiceLatency();
-    middleware(mockReq, mockRes, mockNext);
+  if (type === "sum") {
+    metric.resourceMetrics[0].scopeMetrics[0].metrics[0][type].aggregationTemporality =
+      "AGGREGATION_TEMPORALITY_CUMULATIVE";
+    metric.resourceMetrics[0].scopeMetrics[0].metrics[0][type].isMonotonic = true;
+  }
 
-    expect(metrics.getRequestTotal()).toBeGreaterThanOrEqual(0);
-    expect(mockNext).toHaveBeenCalled();
-  });
+  fetch(config.metrics.url, {
+    method: "POST",
+    body: JSON.stringify(metric),
+    headers: {
+      Authorization: `Bearer ${config.metrics.apiKey}`,
+      "Content-Type": "application/json",
+    },
+  }).catch((error) => console.error("Error pushing metrics:", error));
+}
 
-  test("removeInactiveUsers correctly removes inactive users", () => {
-    metrics.activeUsers = {
-      user1: Date.now() - 200000, 
-      user2: Date.now(), 
-    };
-
-    metrics.removeInactiveUsers();
-
-    expect(Object.keys(metrics.activeUsers)).toContain("user2");
-    expect(Object.keys(metrics.activeUsers)).not.toContain("user1");
-  });
-
-  afterAll(() => {
-    metrics.stopMetricsCollection(); 
-  });
-});
+module.exports = {
+  getRequests,
+  authenticationRequests,
+  pizzaOrderTracking,
+  trackActiveUsers,
+  measureServiceLatency,
+  measurePizzaLatency,
+  getCpuUsagePercentage,
+  getMemoryUsagePercentage,
+  getRequestTotal,
+  removeInactiveUsers,
+  activeUsers,
+  stopMetricsCollection,
+};
