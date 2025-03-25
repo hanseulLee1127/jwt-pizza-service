@@ -28,15 +28,15 @@ test("memory_usage returns a string percentage", () => {
     expect(mockNext).toHaveBeenCalled();
   });
 
-  test("pizzaOrderTracking increments success and revenue", () => {
+  test("trackPizzaOrder increments success and revenue", () => {
     const order = {
       items: [
         { price: 10 },
         { price: 15 }
       ]
     };
-    metrics.pizzaOrderTracking(order, true);
-    metrics.pizzaOrderTracking(order, false);
+    metrics.trackPizzaOrder(order, true);
+    metrics.trackPizzaOrder(order, false);
   });
 
   test("trackActiveUsers adds user to activeUsers", () => {
