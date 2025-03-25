@@ -5,6 +5,7 @@ const { authRouter } = require('./authRouter.js');
 const { asyncHandler, StatusCodeError } = require('../endpointHelper.js');
 const metrics = require("../metrics.js");
 const logger = require('../logger.js')
+
 const orderRouter = express.Router();
 
 orderRouter.endpoints = [
@@ -77,43 +78,25 @@ orderRouter.get(
 orderRouter.post(
   '/',
   authRouter.authenticateToken,
+  metrics.measurePizzaLatency(),
   asyncHandler(async (req, res) => {
-      const orderReq = req.body;
-      const order = await DB.addDinerOrder(req.user, orderReq);
-
-      // Track time for pizza creation
-      const startTime = Date.now();
-
-      try {
-          const r = await fetch(`${config.factory.url}/api/order`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', authorization: `Bearer ${config.factory.apiKey}` },
-              body: JSON.stringify({ diner: { id: req.user.id, name: req.user.name, email: req.user.email }, order }),
-          });
-
-          const endTime = Date.now();
-          const duration = endTime - startTime;
-
-          const j = await r.json();
-
-          if (r.ok) {
-              // Track successful pizza order with duration
-              metrics.pizzaOrderTracking(order, true, duration);
-              logger.log('info', 'factory', `{ user: ${req.user.id}, orderReq: ${JSON.stringify(req.body)}`)
-              res.send({ order, reportSlowPizzaToFactoryUrl: j.reportUrl, jwt: j.jwt });
-          } else {
-              // Track pizza creation failure
-              metrics.pizzaOrderTracking(order, false);
-              logger.log('warn', 'factory', `{ user: ${req.user.id}, orderReq: ${JSON.stringify(req.body)}`)
-              res.status(500).send({ message: 'Failed to fulfill order at factory', reportPizzaCreationErrorToPizzaFactoryUrl: j.reportUrl });
-          }
-      } catch (error) {
-          // Track pizza creation failure due to error
-          metrics.pizzaOrderTracking(order, false);
-          logger.log('error', 'factory', `{ user: ${req.user.id}, orderReq: ${JSON.stringify(req.body)}, error: ${error}`)
-          res.status(500).send({ message: 'Error communicating with pizza factory' });
-          throw new Error(error)
-      }
+    const orderReq = req.body;
+    const order = await DB.addDinerOrder(req.user, orderReq);
+    const r = await fetch(`${config.factory.url}/api/order`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', authorization: `Bearer ${config.factory.apiKey}` },
+      body: JSON.stringify({ diner: { id: req.user.id, name: req.user.name, email: req.user.email }, order }),
+    });
+    const j = await r.json();
+    if (r.ok) {
+      metrics.pizzaOrderTracking(order, true);
+      logger.log('info', 'factory', `{ user: ${req.user.id}, orderReq: ${JSON.stringify(req.body)}`)
+      res.send({ order, reportSlowPizzaToFactoryUrl: j.reportUrl, jwt: j.jwt });
+    } else {
+      metrics.pizzaOrderTracking(order, false);
+      logger.log('warn', 'factory', `{ user: ${req.user.id}, orderReq: ${JSON.stringify(req.body)}`)
+      res.status(500).send({ message: 'Failed to fulfill order at factory', reportPizzaCreationErrorToPizzaFactoryUrl: j.reportUrl });
+    }
   })
 );
 
