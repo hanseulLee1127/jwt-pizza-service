@@ -9,9 +9,18 @@ beforeAll(async () => {
   const loginRes = await request(app).put("/api/auth").send(testUser);
   testUserAuthToken = loginRes.body.token;
   expectValidJwt(testUserAuthToken);
+
+  await request(app)
+    .put("/api/order/menu")
+    .send({
+      title: "test pizza",
+      description: "delicious",
+      image: "image.png",
+      price: 9.99,
+    })
+    .set("Authorization", `Bearer ${testUserAuthToken}`);
 });
 
-//test getMenu endpoint
 test("getMenu", async () => {
   const addMenuItemResult = await request(app)
     .get("/api/order/menu")
@@ -21,7 +30,6 @@ test("getMenu", async () => {
   expect(addMenuItemResult.body).toBeInstanceOf(Array);
 });
 
-//test addMenuItem endpoint
 test("addMenuItem", async () => {
   const menuItem = {
     title: "new pizza",
@@ -39,7 +47,6 @@ test("addMenuItem", async () => {
   expect(addMenuItemResult.body).toBeInstanceOf(Array);
 });
 
-//test getOrders endpoint
 test("getOrders", async () => {
   const getOrdersResult = await request(app)
     .get("/api/order")
@@ -47,32 +54,40 @@ test("getOrders", async () => {
 
   expect(getOrdersResult.status).toBe(200);
   expect(getOrdersResult.body).toBeInstanceOf(Object);
-  return;
 });
 
-//test createOrders endpoint
 test("createOrders", async () => {
-    const createOrderWithOutAuth = await request(app)
+  const createOrderWithOutAuth = await request(app)
     .post("/api/order")
-    .send()
+    .send();
 
-    expect(createOrderWithOutAuth.status).toBe(401);
-    
+  expect(createOrderWithOutAuth.status).toBe(401);
 });
 
 test("createOrdersWithAuth", async () => {
-  const exampleOrder = {"franchiseId": 1, "storeId":1, "items":[{ "menuId": 1, "description": "Veggie", "price": 0.05 }]}
+  const exampleOrder = {
+    franchiseId: 1,
+    storeId: 1,
+    items: [
+      {
+        menuId: 1,
+        description: "Veggie",
+        price: 0.05,
+      },
+    ],
+  };
+
   const getOrdersResult = await request(app)
-  .post("/api/order")
-  .set("Authorization", `Bearer ${testUserAuthToken}`)
-  .set("Content-Type", "application/json")
-  .send(exampleOrder);
+    .post("/api/order")
+    .set("Authorization", `Bearer ${testUserAuthToken}`)
+    .set("Content-Type", "application/json")
+    .send(exampleOrder);
+
+  console.log("createOrdersWithAuth response:", getOrdersResult.body);
 
   expect(getOrdersResult.status).toBe(200);
-
 });
 
-//Helper functions to create random Names and Admin users etc.
 function randomName() {
   return Math.random().toString(36).substring(2, 12);
 }
