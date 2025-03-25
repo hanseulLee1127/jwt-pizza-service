@@ -1,5 +1,4 @@
 const logger = require('../logger');
-const config = require('../config');
 
 jest.mock('node-fetch', () => jest.fn());
 const fetch = require('node-fetch');
