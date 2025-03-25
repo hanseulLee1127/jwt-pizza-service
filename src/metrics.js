@@ -33,7 +33,7 @@ function authenticationRequests(status) {
 }
 
 //Pizza ordering Success, Failure, Revenue
-function pizzaOrderTracking(order, success) {
+function trackPizzaOrder(order, success) {
   if (success == false) {
     pizzaFailure += 1;
     return;
@@ -242,7 +242,7 @@ function sendMetricToGrafana(
 module.exports = {
   getRequests,
   authenticationRequests,
-  pizzaOrderTracking,
+  trackPizzaOrder,
   trackActiveUsers,
   measureServiceLatency,
   measurePizzaLatency,

@@ -89,11 +89,11 @@ orderRouter.post(
     });
     const j = await r.json();
     if (r.ok) {
-      metrics.pizzaOrderTracking(order, true);
+      metrics.trackPizzaOrder(order, true);
       logger.log('info', 'factory', `{ user: ${req.user.id}, orderReq: ${JSON.stringify(req.body)}`)
       res.send({ order, reportSlowPizzaToFactoryUrl: j.reportUrl, jwt: j.jwt });
     } else {
-      metrics.pizzaOrderTracking(order, false);
+      metrics.trackPizzaOrder(order, false);
       logger.log('warn', 'factory', `{ user: ${req.user.id}, orderReq: ${JSON.stringify(req.body)}`)
       res.status(500).send({ message: 'Failed to fulfill order at factory', reportPizzaCreationErrorToPizzaFactoryUrl: j.reportUrl });
     }
