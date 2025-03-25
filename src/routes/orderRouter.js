@@ -4,7 +4,7 @@ const { Role, DB } = require('../database/database.js');
 const { authRouter } = require('./authRouter.js');
 const { asyncHandler, StatusCodeError } = require('../endpointHelper.js');
 const metrics = require("../metrics.js");
-const logger = require('../logger.js')
+const logger = require('../logger.js');
 
 const orderRouter = express.Router();
 
@@ -46,7 +46,9 @@ orderRouter.endpoints = [
 orderRouter.get(
   '/menu',
   asyncHandler(async (req, res) => {
-    res.send(await DB.getMenu());
+    const result = await DB.getMenu();
+    logger.log('info', 'database', { query: 'DB.getMenu()', result });
+    res.send(result);
   })
 );
 
@@ -61,7 +63,11 @@ orderRouter.put(
 
     const addMenuItemReq = req.body;
     await DB.addMenuItem(addMenuItemReq);
-    res.send(await DB.getMenu());
+    logger.log('info', 'database', { query: 'DB.addMenuItem', user: req.user.id, item: addMenuItemReq });
+
+    const result = await DB.getMenu();
+    logger.log('info', 'database', { query: 'DB.getMenu()', result });
+    res.send(result);
   })
 );
 
@@ -70,7 +76,9 @@ orderRouter.get(
   '/',
   authRouter.authenticateToken,
   asyncHandler(async (req, res) => {
-    res.json(await DB.getOrders(req.user, req.query.page));
+    const result = await DB.getOrders(req.user, req.query.page);
+    logger.log('info', 'database', { query: 'DB.getOrders', user: req.user.id, result });
+    res.json(result);
   })
 );
 
@@ -82,6 +90,7 @@ orderRouter.post(
   asyncHandler(async (req, res) => {
     const orderReq = req.body;
     const order = await DB.addDinerOrder(req.user, orderReq);
+    logger.log('info', 'database', { query: 'DB.addDinerOrder', user: req.user.id, order });
     const r = await fetch(`${config.factory.url}/api/order`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', authorization: `Bearer ${config.factory.apiKey}` },
@@ -90,11 +99,11 @@ orderRouter.post(
     const j = await r.json();
     if (r.ok) {
       metrics.trackPizzaOrder(order, true);
-      logger.log('info', 'factory', `{ user: ${req.user.id}, orderReq: ${JSON.stringify(req.body)}`)
+      logger.log('info', 'factory', { user: req.user.id, orderReq: req.body, factoryResponse: j });
       res.send({ order, reportSlowPizzaToFactoryUrl: j.reportUrl, jwt: j.jwt });
     } else {
       metrics.trackPizzaOrder(order, false);
-      logger.log('warn', 'factory', `{ user: ${req.user.id}, orderReq: ${JSON.stringify(req.body)}`)
+      logger.log('error', 'factory', { user: req.user.id, orderReq: req.body, factoryResponse: j });
       res.status(500).send({ message: 'Failed to fulfill order at factory', reportPizzaCreationErrorToPizzaFactoryUrl: j.reportUrl });
     }
   })

@@ -19,6 +19,7 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use(logger.httpLogger);
 app.use(metrics.getRequests());
 app.use(metrics.trackActiveUsers());
 app.use(metrics.measureServiceLatency());
