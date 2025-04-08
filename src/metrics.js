@@ -15,6 +15,14 @@ let activeUsers = {};
 let latency = 0;
 let pizza_latency = 0;
 
+let chaosCount = 0;
+ 
+ 
+ function addChaosCount(){
+     chaosCount++;
+ }
+
+
 //HTTP Requests
 function getRequests() {
   return (req, res, next) => {
@@ -164,6 +172,8 @@ setInterval(() => {
     "1"
   );
 
+  sendMetricToGrafana('chaosCount', chaosCount, "sum", "1");
+
   removeInactiveUsers();
 }, 10000);
 
@@ -249,4 +259,5 @@ module.exports = {
   getCpuUsagePercentage,
   getMemoryUsagePercentage,
   getRequestTotal,
+  addChaosCount
 };
