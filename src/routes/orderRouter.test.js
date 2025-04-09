@@ -21,7 +21,7 @@ test("getMenu", async () => {
   expect(addMenuItemResult.body).toBeInstanceOf(Array);
 });
 
-//test addMenuItem endpoint
+//test addMenuItem endpoint.
 test("addMenuItem", async () => {
   const menuItem = {
     title: "new pizza",
