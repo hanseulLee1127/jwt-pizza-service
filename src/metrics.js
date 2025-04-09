@@ -172,7 +172,7 @@ setInterval(() => {
     "1"
   );
 
-  sendMetricToGrafana('chaosCount', chaosCount, "sum", "1");
+  sendMetricToGrafana("chaosCount", chaosCount, "sum", "1");
 
   removeInactiveUsers();
 }, 10000);
