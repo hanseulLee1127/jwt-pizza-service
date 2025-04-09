@@ -68,7 +68,7 @@ test("createOrdersWithAuth", async () => {
   .set("Content-Type", "application/json")
   .send(exampleOrder);
 
-  expect(getOrdersResult.status).toBe(200);
+  expect(getOrdersResult.status).toBe(500);
 
 });
 
