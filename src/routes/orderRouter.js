@@ -110,14 +110,41 @@ orderRouter.post(
   metrics.measurePizzaLatency(),
   asyncHandler(async (req, res) => {
     const orderReq = req.body;
-    const order = await DB.addDinerOrder(req.user, orderReq);
+
+    const menu = await DB.getMenu();
+    const menuMap = {};
+    for (const item of menu) {
+      menuMap[item.id] = item.price;
+    }
+
+    const sanitizedItems = orderReq.items.map(item => {
+      const actualPrice = menuMap[item.menuId];
+      if (actualPrice === undefined) {
+        throw new StatusCodeError(`Invalid menuId: ${item.menuId}`, 400);
+      }
+      return {
+        menuId: item.menuId,
+        description: item.description,
+        price: actualPrice,
+      };
+    });
+
+    const sanitizedOrder = {
+      franchiseId: orderReq.franchiseId,
+      storeId: orderReq.storeId,
+      items: sanitizedItems,
+    };
+
+    const order = await DB.addDinerOrder(req.user, sanitizedOrder);
     logger.log('info', 'database', { query: 'DB.addDinerOrder', user: req.user.id, order });
+
     const r = await fetch(`${config.factory.url}/api/order`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', authorization: `Bearer ${config.factory.apiKey}` },
       body: JSON.stringify({ diner: { id: req.user.id, name: req.user.name, email: req.user.email }, order }),
     });
     const j = await r.json();
+
     if (r.ok) {
       metrics.trackPizzaOrder(order, true);
       logger.log('info', 'factory', { user: req.user.id, orderReq: req.body, factoryResponse: j });
@@ -129,5 +156,6 @@ orderRouter.post(
     }
   })
 );
+;
 
 module.exports = orderRouter;
